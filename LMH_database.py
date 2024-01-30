@@ -330,10 +330,3 @@ class Database:
             self.close_connection()
 
 
-database = Database("sample_database.db")
-
-database.view_table_contents()
-database.db_insert(["3455"], "null", "lccn2", "source56", "null")
-database.update_db("3455", "ISBN", "233", "null", "null", "767")
-
-print(database.get_metadata("3455", "ISBN"))
