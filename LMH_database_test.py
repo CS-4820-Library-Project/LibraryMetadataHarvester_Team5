@@ -9,14 +9,8 @@ class TestDatabase(unittest.TestCase):
         self.db_manager = Database(self.test_db_name)
         self.db_manager.create_table()
 
-        self.isbns = ["1111111111", "2222222222"]
-        self.ocn = "987654"
-        self.lccn = "LC987654"
-        self.lccn_source = "Library of Congress (Updated)"
-        self.doi = "doi:10.5678/updated"
-
         
-        self.db_manager.db_insert(self.isbns, self.ocn, self.lccn, self.lccn_source, self.doi)
+        
 
     def tearDown(self):
         # Remove the temporary database after testing
@@ -29,106 +23,105 @@ class TestDatabase(unittest.TestCase):
             if os.path.exists(self.test_db_name):
                 os.remove(self.test_db_name)
 
-    def test_insert_single_isbn(self):
-        # Test inserting a single ISBN
-        self.db_manager.db_insert(["1234567890"], "123456", "LC123456", "Library of Congress", "doi:10.1234/example")
+    def test_insert_isbn(self):
+        # Test case for inserting ISBN data into the database
+
+        # Data for testing
+        isbn = "1234567890"
+        ocns = ["ocn1", "ocn2"]
+        lccn = "lccn123"
+        doi = "doi123"
+        source = "test_source"
+
+        # Insert ISBN data into the database
+        self.db_manager.insert_isbn(isbn=isbn, ocns=ocns, lccn=lccn, doi=doi, source=source)
+
+        # Retrieve the inserted data from the database
         self.db_manager.open_connection()
         cursor = self.db_manager.connection.cursor()
-        cursor.execute("SELECT * FROM metadata WHERE isbn=?", ("1234567890",))
-        result = cursor.fetchone()
-        # Verify that the data is in the database
-        
-        self.assertEqual(result, ("1234567890", "123456", "LC123456", "Library of Congress", "doi:10.1234/example"))
+        result = cursor.execute("SELECT * FROM metadata WHERE isbn=? AND isbn_source=?", (isbn, "input")).fetchone()
+        cursor.close()
 
-    def test_insert_multiple_isbns(self):
-        # Test inserting multiple ISBNs
-        isbns = ["2234567890", "0987654321", "5555555555"]
-        self.db_manager.db_insert(isbns, "123459", "LC12345", "Library of Congress", "doi:10.1234/example")
+        # Assertions to check if the data was inserted correctly
+        self.assertIsNotNone(result)  # Check if the result is not None (i.e., data is found)
+        self.assertEqual(result[0], isbn)  # ISBN should match
+        self.assertEqual(result[1], "input")  # ISBN source should match
+        self.assertEqual(result[2], ocns[0])  # First OCN should match
+        self.assertEqual(result[3], source)  # OCN source should match
+        self.assertEqual(result[4], lccn)  # LCCN should match
+        self.assertEqual(result[5], source)  # LCCN source should match
+        self.assertEqual(result[6], doi)  # DOI should match
+        self.assertEqual(result[7], source)  # DOI source should match
 
-        # Verify that each ISBN is in the database
-        for isbn in isbns:
-            self.db_manager.open_connection()
-            cursor = self.db_manager.connection.cursor()
-            cursor.execute("SELECT * FROM metadata WHERE isbn=?", (isbn,))
-            result = cursor.fetchone()
-            
-            
-            self.assertEqual(result, (isbn, "123459", "LC12345", "Library of Congress", "doi:10.1234/example"))
 
     def test_insert_ocn(self):
-        # Test inserting with OCN
-        self.db_manager.db_insert([], "112233", "LC123456", "Library of Congress", "doi:10.1234/example")
-        # Verify that the data is in the database
+        # Test case for inserting ISBN data into the database
+
+        # Data for testing
+        isbns = ["83425","1234567890"]
+        ocn = "18395"
+        lccn = "lccn123"
+        doi = "doi123"
+        source = "test_source"
+
+        # Insert ISBN data into the database
+        self.db_manager.insert_ocn(ocn=ocn, isbns=isbns, lccn=lccn, doi=doi, source=source)
+        
+
+        # Retrieve the inserted data from the database
         self.db_manager.open_connection()
         cursor = self.db_manager.connection.cursor()
-        cursor.execute("SELECT * FROM metadata WHERE ocn=?", ("112233",))
-        result = cursor.fetchone()
+        result = cursor.execute("SELECT * FROM metadata WHERE ocn=? AND ocn_source=?", (ocn, "input")).fetchone()
+        cursor.close()
+
+        # Assertions to check if the data was inserted correctly
+        self.assertIsNotNone(result)  # Check if the result is not None (i.e., data is found)
+        self.assertEqual(result[0], isbns[0])  # ISBN should match
+        self.assertEqual(result[1], source)  # ISBN source should match
+        self.assertEqual(result[2], ocn)  # First OCN should match
+        self.assertEqual(result[3], "input")  # OCN source should match
+        self.assertEqual(result[4], lccn)  # LCCN should match
+        self.assertEqual(result[5], source)  # LCCN source should match
+        self.assertEqual(result[6], doi)  # DOI should match
+        self.assertEqual(result[7], source)  # DOI source should match
+
+
+
+    def test_get_isbn_metadata(self):
+       
+        isbn = "1234567890"
+        source = "test_source2"
+
         
-        self.assertEqual(result, ("null", "112233", "LC123456", "Library of Congress", "doi:10.1234/example"))
+        # Insert data into the database for the test
+        self.db_manager.insert_isbn(isbn, ["3849", "3344"], "B18 23", "100.400", source)
 
-        self.db_manager.db_insert(["1111122222","2222233333"],"4433234","LC123456", "Library of Congress", "null")
-        self.db_manager.open_connection()
-        cursor = self.db_manager.connection.cursor()
-        cursor.execute("SELECT * FROM metadata WHERE ocn=?", ("4433234",))
-        result = cursor.fetchall()
         
-        self.assertEqual(result, [("1111122222","4433234","LC123456", "Library of Congress", "null"),("2222233333","4433234","LC123456", "Library of Congress", "null")])
+        result = self.db_manager.get_isbn_metadata(isbn, source)
 
-
-    def test_get_metadata_with_isbn(self):
-        # Test getting metadata with ISBN
         
-        for isbn in self.isbns:
-            metadata = self.db_manager.get_metadata(isbn, "ISBN")
-            expected_metadata = [isbn, self.ocn, self.lccn, self.lccn_source, self.doi]
-            self.assertEqual(metadata, expected_metadata)
+        self.assertIsInstance(result, list)
+        self.assertEqual(len(result), 5)  
+        self.assertEqual(result, ["1234567890", ["3849","3344"], "B18 23","test_source2", "100.400"])
+        
 
-    def test_get_metadata_with_ocn(self):
-        # Test getting metadata with OCN
-        metadata = self.db_manager.get_metadata(self.ocn, "OCN")
-        expected_metadata = [self.isbns, self.ocn, self.lccn, self.lccn_source, self.doi]
-        self.assertEqual(metadata, expected_metadata)
+    def test_get_ocn_metadata(self):
+        
+        ocn = "432532"
+        source = "test_source3"
 
-    def test_get_metadata_not_in_database(self):
-        # Test getting metadata for a number not in the database
-        not_in_database_number = "9999999999"
-        metadata = self.db_manager.get_metadata(not_in_database_number, "ISBN")
-        self.assertEqual(metadata, [])
+        
+        # Insert data into the database for the test
+        self.db_manager.insert_ocn(ocn, ["21431", "53241"], "B18 23", "100.400", source)
 
-    def test_update_db_ocn(self):
-        # Test updating with OCN, updating ISBN, and creating new records for additional ISBNs
-        self.db_manager.db_insert([],"12344","584A2", "OCLC", "null")
-        self.db_manager.update_db("12344", "OCN", ["11111222", "333333222"], "584A2", "OCLC", "100.200/doi")
+        
+        result = self.db_manager.get_ocn_metadata(ocn, source)
 
-        # Check if the data was updated correctly
-        result = self.get_metadata("12344", "OCN")
-        expected_result = [["11111222", "333333222"],"12344", "584A2", "OCLC", "100.200/doi"]
-        self.assertEqual(result, expected_result)
-
-        # Check if new records were created for additional ISBNs
-        result_isbn_1 = self.get_metadata("11111222", "ISBN")
-        result_isbn_2 = self.get_metadata("333333222", "ISBN")
-        expected_result_isbn_1 = ["11111222", "12344", "584A2", "OCLC", "100.200/doi"]
-        expected_result_isbn_2 = ["333333222", "12344", "584A2", "OCLC", "100.200/doi"]
-        self.assertEqual(result_isbn_1, expected_result_isbn_1)
-        self.assertEqual(result_isbn_2, expected_result_isbn_2)
-
-    def test_update_db_isbn(self):
-        # Test updating with ISBN, updating other metadata values
-        self.db_manager.db_insert(["44334422"],"null","584A2", "OCLC", "null")
-        self.db_manager.update_db("44334422", "ISBN", "55544433", "584A2", "OCLC", "100.200")
-
-        # Check if the data was updated correctly
-        result = self.get_metadata("44334422", "ISBN")
-        expected_result = ["44334422", "55544433", "584A2", "OCLC", "100.200"]
-        self.assertEqual(result, expected_result)
-
-    def test_is_in_database(self):
-        self.db_manager.db_insert(["2234567890"],"234524", "null", "null", "null")
-        self.assertEqual(self.db_manager.is_in_database("2234567890", "ISBN"), True)
-        self.assertEqual(self.db_manager.is_in_database("234524", "OCN"), True)
-        self.assertEqual(self.db_manager.is_in_database("7777777", "ISBN"), False)
-        self.assertEqual(self.db_manager.is_in_database("0990909", "OCN"), False)
+        
+        self.assertIsInstance(result, list)
+        self.assertEqual(len(result), 5)  
+        self.assertEqual(result, [ ["21431","53241"],"432532", "B18 23","test_source3", "100.400"])
+        
         
 
     def test_clear_db(self):
@@ -140,9 +133,7 @@ class TestDatabase(unittest.TestCase):
         result = cursor.fetchall()
         self.assertEqual(len(result), 0)
 
-    def get_metadata(self, number, isbn_or_ocn):
-        # Helper function to retrieve metadata for testing
-        return self.db_manager.get_metadata(number, isbn_or_ocn)
+    
     
 if __name__ == '__main__':
     unittest.main()
