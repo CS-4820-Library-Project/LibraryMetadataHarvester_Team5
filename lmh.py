@@ -26,6 +26,8 @@ def write_to_output(metadata, output_file):
             ]
             writer.writerow(row)
 
+    print("Output File Generated.")
+
 def retrieve_data_from_harvard(isbn):
     base_url = "http://webservices.lib.harvard.edu/rest/v3/hollis/mods/isbn/"
     jsonp = "?jsonp=record"
