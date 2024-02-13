@@ -6,8 +6,11 @@ class LMHDataOutputSystem:
         self.database_name = database_name
         self.conn = sqlite3.connect(database_name)
         self.cursor = self.conn.cursor()
+         # Initialize the NotificationSystem
+        self.notification_system = notificationSystem()
 
     def retrieve_metadata(self, number, number_type):
+        try:
         # Check if the given ISBN or OCN is in the database
         if self.is_in_database(number, number_type):
             # Query to retrieve metadata from the database
@@ -19,33 +22,56 @@ class LMHDataOutputSystem:
                 # Extract metadata from the result
                 isbn_list, ocn, lccn, lccn_source, doi = result
                 return [isbn_list.split(','), ocn, lccn, lccn_source, doi]
-        return []
+         except Exception as e:
+            self.handle_error(f"Error retrieving metadata: {e}")
+            return []
 
     def is_in_database(self, number, number_type):
         # Check if the given ISBN or OCN is present in the database
-        query = f"SELECT COUNT(*) FROM lmh_data WHERE {number_type} = ?"
-        self.cursor.execute(query, (number,))
-        count = self.cursor.fetchone()[0]
-        return count > 0
+        try:
+            query = f"SELECT COUNT(*) FROM lmh_data WHERE {number_type} = ?"
+            self.cursor.execute(query, (number,))
+            count = self.cursor.fetchone()[0]
+            return count > 0
+        except Exception as e:
+            self.handle_error(f"Error checking database: {e}")
+            return False
 
     def reset_database(self):
         # Reset the entire database
-        query = "DELETE FROM lmh_data"
-        self.cursor.execute(query)
-        self.conn.commit()
+        try:
+            query = "DELETE FROM lmh_data"
+            self.cursor.execute(query)
+            self.conn.commit()
+        except Exception as e:
+            self.handle_error(f"Error resetting database: {e}")
 
     def display_database(self):
-        # Display the contents of the database (for testing)
-        query = "SELECT * FROM lmh_data"
-        self.cursor.execute(query)
-        rows = self.cursor.fetchall()
-
-        for row in rows:
-            print(row)
+        # Display the contents of the database (for testing)+
+        try:
+            query = "SELECT * FROM lmh_data"
+            self.cursor.execute(query)
+            rows = self.cursor.fetchall()
+            for row in rows:
+                print(row)
+        except Exception as e:
+            self.handle_error(f"Error displaying database: {e}")
 
     def close_connection(self):
         # Close the database connection
-        self.conn.close()
+        try: 
+            self.conn.close()
+        except Exception as e:
+            self.handle_error(f"Error closing connection: {e}")
+
+     def handle_error(self, error_message):
+        """
+        Handle errors by notifying the user and logging the error.
+
+        Parameters:
+        - error_message (str): The error message to be displayed.
+        """
+        self.notification_system.notify_user(error_message)
 
 
 # Example usage
