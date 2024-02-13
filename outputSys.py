@@ -1,28 +1,31 @@
 import sqlite3
 
+from notificationSys import NotificationSystem, notify_user
+
+
 class LMHDataOutputSystem:
     def __init__(self, database_name='LMH_database.db'):
         # Initialize the LMHDataOutputSystem
         self.database_name = database_name
         self.conn = sqlite3.connect(database_name)
         self.cursor = self.conn.cursor()
-         # Initialize the NotificationSystem
-        self.notification_system = notificationSystem()
+        # Initialize the NotificationSystem
+        self.notification_system = NotificationSystem()
 
     def retrieve_metadata(self, number, number_type):
         try:
-        # Check if the given ISBN or OCN is in the database
-        if self.is_in_database(number, number_type):
-            # Query to retrieve metadata from the database
-            query = f"SELECT ISBN, OCN, LCCN, LCCN_SOURCE, DOI FROM lmh_data WHERE {number_type} = ?"
-            self.cursor.execute(query, (number,))
-            result = self.cursor.fetchone()
+            # Check if the given ISBN or OCN is in the database
+            if self.is_in_database(number, number_type):
+                # Query to retrieve metadata from the database
+                query = f"SELECT ISBN, OCN, LCCN, LCCN_SOURCE, DOI FROM lmh_data WHERE {number_type} = ?"
+                self.cursor.execute(query, (number,))
+                result = self.cursor.fetchone()
 
-            if result:
-                # Extract metadata from the result
-                isbn_list, ocn, lccn, lccn_source, doi = result
-                return [isbn_list.split(','), ocn, lccn, lccn_source, doi]
-         except Exception as e:
+                if result:
+                    # Extract metadata from the result
+                    isbn_list, ocn, lccn, lccn_source, doi = result
+                    return [isbn_list.split(','), ocn, lccn, lccn_source, doi]
+        except Exception as e:
             self.handle_error(f"Error retrieving metadata: {e}")
             return []
 
@@ -59,19 +62,16 @@ class LMHDataOutputSystem:
 
     def close_connection(self):
         # Close the database connection
-        try: 
-            self.conn.close()
-        except Exception as e:
-            self.handle_error(f"Error closing connection: {e}")
+        self.conn.close()
 
-     def handle_error(self, error_message):
+    def handle_error(self, error_message):
         """
         Handle errors by notifying the user and logging the error.
 
         Parameters:
         - error_message (str): The error message to be displayed.
         """
-        self.notification_system.notify_user(error_message)
+        notify_user(error_message)
 
 
 # Example usage

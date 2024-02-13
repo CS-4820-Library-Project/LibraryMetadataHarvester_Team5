@@ -6,6 +6,8 @@ current features {
 timeout time for a single ISBN search
 } 
 """
+
+
 class Config:
     def __init__(self, config_file='config.json'):
         self.config_file = config_file

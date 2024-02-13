@@ -4,11 +4,13 @@ import json
 
 import requests
 
+
 def read_input_file(file_path):
     with open(file_path, 'r') as file:
         reader = csv.reader(file, delimiter='\t')  # Adjust delimiter based on the actual file format
         input_data = [row[0] for row in reader]  # Assuming the data is in the first column of the file
     return input_data
+
 
 def write_to_output(metadata, output_file):
     header = ['ISBN', 'OCLC', 'LCC', 'LCC-Source']
@@ -27,6 +29,7 @@ def write_to_output(metadata, output_file):
             writer.writerow(row)
 
     print("Output File Generated.")
+
 
 def retrieve_data_from_harvard(isbn):
     base_url = "http://webservices.lib.harvard.edu/rest/v3/hollis/mods/isbn/"
@@ -51,6 +54,7 @@ def retrieve_data_from_harvard(isbn):
         print(f"Error retrieving data from Harvard: {e}")
         return None
 
+
 def main():
     parser = argparse.ArgumentParser(description="Library Metadata Harvester")
 
@@ -63,7 +67,8 @@ def main():
     parser.add_argument("--search-sources", help="Specify internet sources to search (comma-separated).")
     parser.add_argument("--source-priorities", help="Specify priority levels for internet sources (comma-separated).")
     parser.add_argument("--worldcat-key", help="Set the OCLC authentication key for WorldCat access.")
-    parser.add_argument("--config", action="store_true", help="Configure LMH settings (administrative permission required).")
+    parser.add_argument("--config", action="store_true",
+                        help="Configure LMH settings (administrative permission required).")
 
     # Parse command-line arguments
     args = parser.parse_args()
@@ -132,6 +137,7 @@ def main():
         print("Error: Please provide an input file using the -i or --input option.")
 
     # TODO: Add logic to handle the rest of the command-line arguments and execute the LMH functionality
+
 
 if __name__ == "__main__":
     main()
