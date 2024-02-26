@@ -46,8 +46,7 @@ class Database:
                             ocn_source TEXT,
                             lccn TEXT,
                             lccn_source TEXT,
-                            doi TEXT,
-                            doi_source TEXT)''')
+                            doi TEXT)''')
             self.connection.commit()
 
         except sqlite3.Error as e:
@@ -79,11 +78,11 @@ class Database:
             for item in ocns:
                 x = cursor.execute('''SELECT * FROM metadata WHERE isbn=? 
                                    AND isbn_source=? AND ocn=? AND ocn_source=? AND lccn=? 
-                                   AND lccn_source=? AND doi=? AND doi_source=?''', (isbn, "input", item, source, lccn, source, doi, source)).fetchall()
+                                   AND lccn_source=? AND doi=?''', (isbn, "input", item, source, lccn, source, doi)).fetchall()
                 
                 if len(x) == 0:
-                    cursor.execute("INSERT INTO metadata (isbn, isbn_source, ocn, ocn_source, lccn, lccn_source, doi, doi_source) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                                       (isbn, "input", item, source, lccn, source, doi, source))
+                    cursor.execute("INSERT INTO metadata (isbn, isbn_source, ocn, ocn_source, lccn, lccn_source, doi) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                                       (isbn, "input", item, source, lccn, source, doi))
                     
                 self.connection.commit()
 
@@ -119,11 +118,11 @@ class Database:
             for item in isbns:
                 x = cursor.execute('''SELECT * FROM metadata WHERE isbn=? 
                                    AND isbn_source=? AND ocn=? AND ocn_source=? AND lccn=? 
-                                   AND lccn_source=? AND doi=? AND doi_source=?''', (item, source, ocn, "input", lccn, source, doi, source)).fetchall()
+                                   AND lccn_source=? AND doi=?''', (item, source, ocn, "input", lccn, source, doi)).fetchall()
                 
                 if len(x) == 0:
-                    cursor.execute("INSERT INTO metadata (isbn, isbn_source, ocn, ocn_source, lccn, lccn_source, doi, doi_source) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                                       (item, source, ocn, "input", lccn, source, doi, source))
+                    cursor.execute("INSERT INTO metadata (isbn, isbn_source, ocn, ocn_source, lccn, lccn_source, doi) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                                       (item, source, ocn, "input", lccn, source, doi))
                     
                 self.connection.commit()
 
@@ -225,7 +224,7 @@ class Database:
                 lccn = "null"
                 lccn_source = "null"
 
-            doi = cursor.execute("SELECT doi FROM metadata WHERE isbn=? AND doi_source=?", (isbn, source)).fetchone()
+            doi = cursor.execute("SELECT doi FROM metadata WHERE isbn=?", (isbn,)).fetchone()
             if doi is None:
                 doi = "null"
 
@@ -280,7 +279,7 @@ class Database:
                 lccn = "null"
                 lccn_source = "null"
 
-            doi = cursor.execute("SELECT doi FROM metadata WHERE ocn=? AND doi_source=?", (ocn, source)).fetchone()
+            doi = cursor.execute("SELECT doi FROM metadata WHERE ocn=?", (ocn,)).fetchone()
             if doi is None:
                 doi = "null"
 

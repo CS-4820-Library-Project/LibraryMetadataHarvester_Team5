@@ -51,7 +51,7 @@ class TestDatabase(unittest.TestCase):
         self.assertEqual(result[4], lccn)  # LCCN should match
         self.assertEqual(result[5], source)  # LCCN source should match
         self.assertEqual(result[6], doi)  # DOI should match
-        self.assertEqual(result[7], source)  # DOI source should match
+        
 
 
     def test_insert_ocn(self):
@@ -83,7 +83,7 @@ class TestDatabase(unittest.TestCase):
         self.assertEqual(result[4], lccn)  # LCCN should match
         self.assertEqual(result[5], source)  # LCCN source should match
         self.assertEqual(result[6], doi)  # DOI should match
-        self.assertEqual(result[7], source)  # DOI source should match
+        
 
 
 
@@ -98,6 +98,7 @@ class TestDatabase(unittest.TestCase):
 
         
         result = self.db_manager.get_isbn_metadata(isbn, source)
+        
 
         
         self.assertIsInstance(result, list)
