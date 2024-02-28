@@ -1,11 +1,8 @@
+import harvardAPI
+import locAPI
 import argparse
 import csv
-import json
 
-import requests
-from requests.auth import HTTPBasicAuth
-from datetime import timedelta
-from ratelimit import limits, sleep_and_retry
 
 def read_input_file(file_path):
     with open(file_path, 'r') as file:
@@ -31,97 +28,6 @@ def write_to_output(metadata, output_file):
             writer.writerow(row)
 
     print("Output File Generated.")
-
-
-def retrieve_data_from_harvard(isbn):
-    base_url = "http://webservices.lib.harvard.edu/rest/v3/hollis/mods/isbn/"
-    jsonp = "?jsonp=record"
-    full_url = f"{base_url}{isbn}{jsonp}"
-
-    try:
-        response = requests.get(full_url)
-        response.raise_for_status()  # Raise an HTTPError for bad responses
-        data = response.content.decode('utf-8')  # Decode the byte string
-
-        # Extract JSON data from the response (assuming the JSON is inside parentheses)
-        json_start = data.find('(') + 1
-        json_end = data.rfind(')')
-        json_data = data[json_start:json_end]
-
-        # Parse the extracted JSON data
-        parsed_data = json.loads(json_data)
-
-        return parsed_data
-    except requests.exceptions.RequestException as e:
-        print(f"Error retrieving data from Harvard: {e}")
-        return None
-
-
-@sleep_and_retry
-@limits(calls=10, period=timedelta(seconds=10).total_seconds())
-def retrieve_data_from_loc(number):
-    base_url = "https://www.loc.gov/search/"
-    jsonq = "?fo=json&q="
-    full_url = f"{base_url}{jsonq}{number}"
-
-    try:
-        response = requests.get(full_url)
-        response.raise_for_status()  # Raise an HTTPError for bad responses
-        data = response.content.decode('utf-8')  # Decode the byte string
-
-        # Parse the extracted JSON data
-        parsed_data = json.loads(data)
-
-        return parsed_data
-    except requests.exceptions.RequestException as e:
-        print(f"Error retrieving data from LOC: {e}")
-        return None
-
-
-def request_authentication_key_from_oclc():
-    base_url = "https://oauth.oclc.org/token"
-    client_id = "d2au8EHInSt5k21k3CJDlLe4Dn2FlXGEQ1LiNOWaWKIznGSAzEzwqMw9XsBSAbMsUImvplz98B5smA7J"
-    secret = "Qjcq0YS93zZY52DK0Z6tDBluVZoUSXSR"
-
-    headers = {'Accept': 'application/json'}
-    params = {'grant_type': 'client_credentials', 'scope': 'WorldCatMetadataAPI'}
-
-    try:
-        response = requests.get(base_url, auth=HTTPBasicAuth(client_id, secret), params=params, headers=headers)
-        response_data = response.json()
-        print(response.text)
-
-        if 'access_token' in response_data:
-            access_token = response_data['access_token']
-            print(f"Access Token: {access_token}")
-        else:
-            print("Error: Access token not found in response.")
-    except Exception as e:
-        print(f"Error retrieving access token from OCLC: {e}")
-        return None
-
-
-def retrieve_data_from_oclc(oclc):
-    base_url = "https://americas.discovery.api.oclc.org/worldcat/search/v2/bibs/"
-    full_url = f"{base_url}{oclc}"
-
-    try:
-        response = requests.get(full_url)
-        response.raise_for_status()  # Raise an HTTPError for bad responses
-        data = response.content.decode('utf-8')  # Decode the byte string
-
-        # Extract JSON data from the response (assuming the JSON is inside parentheses)
-        json_start = data.find('(') + 1
-        json_end = data.rfind(')')
-        json_data = data[json_start:json_end]
-
-        # Parse the extracted JSON data
-        parsed_data = json.loads(json_data)
-
-        return parsed_data
-    except requests.exceptions.RequestException as e:
-        print(f"Error retrieving data from OCLC: {e}")
-        return None
 
 
 def main():
@@ -151,6 +57,7 @@ def main():
         input_data = read_input_file(args.input)
         print(f"Input data: {input_data}")
 
+        # Check which type of input data we have
         if len(input_data[0]) >= 10:
             is_isbn = True
             print("List Contains ISBN Values")
@@ -174,91 +81,18 @@ def main():
                     print(
                         "Harvard API requires ISBN Values as Input. Please input a list of ISBN values to use this API.")
                     break
-                harvard_data = retrieve_data_from_harvard(number)
-                if harvard_data:
-                    classifications = harvard_data.get('mods', {}).get('classification', [])
-                    identifiers = harvard_data.get('mods', {}).get('identifier', [])
-
-                    if isinstance(identifiers, dict):
-                        if identifiers.get('type') == 'oclc':
-                            oclc = identifiers.get('content', '')
-
-                            entry.update({
-                                'oclc': oclc,
-                            })
-                    else:
-                        oclc = ''
-                        for identifier in identifiers:
-                            if not isinstance(identifier, dict):
-                                print("Error: Entry formatted incorrectly, skipping this one")
-                                continue
-                            if identifier.get('type') == 'oclc':
-                                oclc = identifier.get('content', '')
-
-                            entry.update({
-                                'oclc': oclc,
-                            })
-
-                    if isinstance(classifications, dict):
-                        if classifications.get('authority') == 'lcc':
-                            lcc = classifications.get('content', '')
-
-                            entry.update({
-                                'lcc': lcc,
-                                'source': 'Harvard'
-                            })
-                    else:
-                        lcc = ''
-                        for classification in classifications:
-                            if not isinstance(classification, dict):
-                                print("Error: Entry formatted incorrectly, skipping this one")
-                                continue
-                            if classification.get('authority') == 'lcc':
-                                lcc = classification.get('content', '')
-
-                            entry.update({
-                                'lcc': lcc,
-                                'source': 'Harvard'
-                            })
+                entry = harvardAPI.parse_harvard_data(entry, number)
 
             # Check if OCLC is selected as a source
             if args.search_sources and 'oclc' in args.search_sources.lower().split(','):
                 if not is_oclc:
                     print("OCLC API requires OCLC Values as Input. Please input a list of OCLC values to use this API.")
                     break
-
-                oclc_data = retrieve_data_from_oclc(number)
+                # TODO: If OCLC Isn't scrapped from project its stuff will go here
 
             # Check if LOC is selected as a source
             if args.search_sources and 'loc' in args.search_sources.lower().split(','):
-                loc_data = retrieve_data_from_loc(number)
-                if loc_data:
-                    results = loc_data.get('results', {})
-
-                    lcc = ''
-                    oclc = ''
-                    for result in results:
-                        if not isinstance(result, dict):
-                            print("Error: Entry formatted incorrectly, skipping this one")
-                            continue
-                        if result.get('item').get('call_number'):
-                            call_number = (result.get('item').get('call_number'))
-                            lcc = call_number[0]
-                        if result.get('number_oclc') and not is_oclc:
-                            oclc_number = (result.get('number_oclc'))
-                            oclc = oclc_number[0]
-
-                        if is_oclc:
-                            entry.update({
-                                'lcc': lcc,
-                                'source': 'loc'
-                            })
-                        else:
-                            entry.update({
-                                'lcc': lcc,
-                                'oclc': oclc,
-                                'source': 'loc'
-                            })
+                entry = locAPI.parse_loc_data(entry, number, is_oclc)
 
             # Append the entry to metadata
             metadata.append(entry)
