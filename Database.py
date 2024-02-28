@@ -1,5 +1,6 @@
 import sqlite3
 
+
 def create_database(name):
     # Connect to the database (it will be created if it doesn't exist)
     conn = sqlite3.connect(name)
@@ -21,6 +22,7 @@ def create_database(name):
     # Commit the changes and close the connection
     conn.commit()
     conn.close()
+
 
 # Example usage
 create_database('LMH_database.db')

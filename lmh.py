@@ -4,6 +4,7 @@ import argparse
 import csv
 
 
+
 def read_input_file(file_path):
     with open(file_path, 'r') as file:
         reader = csv.reader(file, delimiter='\t')  # Adjust delimiter based on the actual file format
@@ -28,6 +29,30 @@ def write_to_output(metadata, output_file):
             writer.writerow(row)
 
     print("Output File Generated.")
+
+
+def retrieve_data_from_harvard(isbn):
+    base_url = "http://webservices.lib.harvard.edu/rest/v3/hollis/mods/isbn/"
+    jsonp = "?jsonp=record"
+    full_url = f"{base_url}{isbn}{jsonp}"
+
+    try:
+        response = requests.get(full_url)
+        response.raise_for_status()  # Raise an HTTPError for bad responses
+        data = response.content.decode('utf-8')  # Decode the byte string
+
+        # Extract JSON data from the response (assuming the JSON is inside parentheses)
+        json_start = data.find('(') + 1
+        json_end = data.rfind(')')
+        json_data = data[json_start:json_end]
+
+        # Parse the extracted JSON data
+        parsed_data = json.loads(json_data)
+
+        return parsed_data
+    except requests.exceptions.RequestException as e:
+        print(f"Error retrieving data from Harvard: {e}")
+        return None
 
 
 def main():
