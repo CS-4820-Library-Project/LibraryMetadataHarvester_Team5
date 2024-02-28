@@ -1,8 +1,8 @@
+import harvardAPI
+import locAPI
 import argparse
 import csv
-import json
 
-import requests
 
 
 def read_input_file(file_path):
@@ -64,7 +64,8 @@ def main():
     parser.add_argument("--retrieve-ocns", action="store_true", help="Retrieve associated OCNs (for ISBN input).")
     parser.add_argument("--retrieve-isbns", action="store_true", help="Retrieve associated ISBNs (for OCN input).")
     parser.add_argument("--retrieve-lccns", action="store_true", help="Retrieve Library of Congress Call Numbers.")
-    parser.add_argument("--search-sources", help="Specify internet sources to search (comma-separated).")
+    parser.add_argument("--search-sources",
+                        help="Specify internet sources to search (comma-separated). Examples include: harvard, oclc, loc")
     parser.add_argument("--source-priorities", help="Specify priority levels for internet sources (comma-separated).")
     parser.add_argument("--worldcat-key", help="Set the OCLC authentication key for WorldCat access.")
     parser.add_argument("--config", action="store_true",
@@ -73,65 +74,59 @@ def main():
     # Parse command-line arguments
     args = parser.parse_args()
 
+    is_isbn = False
+    is_oclc = False
+
     # Get the input data if the input argument was used
     if args.input:
         input_data = read_input_file(args.input)
         print(f"Input data: {input_data}")
 
+        # Check which type of input data we have
+        if len(input_data[0]) >= 10:
+            is_isbn = True
+            print("List Contains ISBN Values")
+        elif len(input_data[0]) <= 9:
+            is_oclc = True
+            print("List Contains OCLC Values")
+
         # Initialize metadata list
         metadata = []
 
-        for isbn in input_data:
-            entry = {'isbn': isbn}
+        for number in input_data:
+
+            if is_isbn:
+                entry = {'isbn': number}
+            if is_oclc:
+                entry = {'oclc': number}
 
             # Check if Harvard is selected as a source
             if args.search_sources and 'harvard' in args.search_sources.lower().split(','):
-                harvard_data = retrieve_data_from_harvard(isbn)
-                if harvard_data:
-                    classifications = harvard_data.get('mods', {}).get('classification', [])
-                    identifiers = harvard_data.get('mods', {}).get('identifier', [])
+                if not is_isbn:
+                    print(
+                        "Harvard API requires ISBN Values as Input. Please input a list of ISBN values to use this API.")
+                    break
+                entry = harvardAPI.parse_harvard_data(entry, number)
 
-                    if isinstance(identifiers, dict):
-                        if identifiers.get('type') == 'oclc':
-                            oclc = identifiers.get('content', '')
+            # Check if OCLC is selected as a source
+            if args.search_sources and 'oclc' in args.search_sources.lower().split(','):
+                if not is_oclc:
+                    print("OCLC API requires OCLC Values as Input. Please input a list of OCLC values to use this API.")
+                    break
+                # TODO: If OCLC Isn't scrapped from project its stuff will go here
 
-                            entry.update({
-                                'oclc': oclc,
-                            })
-                    else:
-                        oclc = ''
-                        for identifier in identifiers:
-                            if identifier.get('type') == 'oclc':
-                                oclc = identifier.get('content', '')
-
-                            entry.update({
-                                'oclc': oclc,
-                            })
-
-                    if isinstance(classifications, dict):
-                        if classifications.get('authority') == 'lcc':
-                            lcc = classifications.get('content', '')
-
-                            entry.update({
-                                'lcc': lcc,
-                                'source': 'Harvard'
-                            })
-                    else:
-                        lcc = ''
-                        for classification in classifications:
-                            if classification.get('authority') == 'lcc':
-                                lcc = classification.get('content', '')
-
-                            entry.update({
-                                'lcc': lcc,
-                                'source': 'Harvard'
-                            })
+            # Check if LOC is selected as a source
+            if args.search_sources and 'loc' in args.search_sources.lower().split(','):
+                entry = locAPI.parse_loc_data(entry, number, is_oclc)
 
             # Append the entry to metadata
             metadata.append(entry)
 
-        # Write metadata to output file
-        write_to_output(metadata, args.output)
+        if args.output:
+            # Write metadata to output file
+            write_to_output(metadata, args.output)
+        else:
+            print("No output file requested. If an output file is desired please use the -o or --output option.")
 
     else:
         print("Error: Please provide an input file using the -i or --input option.")
