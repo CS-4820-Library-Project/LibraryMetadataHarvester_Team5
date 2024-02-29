@@ -1,8 +1,9 @@
+import json
+import requests
 import harvardAPI
 import locAPI
 import argparse
 import csv
-
 
 
 def read_input_file(file_path):
@@ -53,7 +54,8 @@ def retrieve_data_from_harvard(isbn):
     except requests.exceptions.RequestException as e:
         print(f"Error retrieving data from Harvard: {e}")
         return None
-    
+
+
 def open_library_isbn(isbn):
     try:
         # Construct the URL for the Open Library API
@@ -66,7 +68,6 @@ def open_library_isbn(isbn):
         if response.status_code == 200:
             # Convert the response to JSON format
             data = response.json()
-            
 
             # Extract OCLC number and LC call number if available
             if f"ISBN:{isbn}" in data:
@@ -86,33 +87,27 @@ def open_library_isbn(isbn):
         return [None, None]
 
 
-
-    
-
 def open_library_oclc(oclc_number):
     try:
         url = f"http://openlibrary.org/api/books?bibkeys=OCLC:{oclc_number}&format=json&jscmd=data"
         response = requests.get(url)
-        
+
         if response.status_code == 200:
             data = response.json()
             print(data)
             book_info = data.get(f"OCLC:{oclc_number}", {})
-            
-        
+
             isbn_number = book_info.get("identifiers", {}).get("isbn_13")
             lc_call_number = book_info.get("classifications", {}).get("lc_classifications")
             return [isbn_number, lc_call_number]
-            
+
         else:
             print("Error for OpenLibrary API:", response.status_code)
             return [None, None]
-        
+
     except Exception as e:
         print(f"An error occurred in OpenLibrary API: {e}")
         return [None, None]
-    
-
 
 
 def main():
@@ -125,7 +120,8 @@ def main():
     parser.add_argument("--retrieve-isbns", action="store_true", help="Retrieve associated ISBNs (for OCN input).")
     parser.add_argument("--retrieve-lccns", action="store_true", help="Retrieve Library of Congress Call Numbers.")
     parser.add_argument("--search-sources",
-                        help="Specify internet sources to search (comma-separated). Examples include: harvard, oclc, loc")
+                        help="Specify internet sources to search (comma-separated). Examples include: harvard, oclc, "
+                             "loc")
     parser.add_argument("--source-priorities", help="Specify priority levels for internet sources (comma-separated).")
     parser.add_argument("--worldcat-key", help="Set the OCLC authentication key for WorldCat access.")
     parser.add_argument("--config", action="store_true",
