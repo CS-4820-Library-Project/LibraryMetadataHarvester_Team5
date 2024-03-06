@@ -69,12 +69,25 @@ def main():
         # Initialize metadata list
         metadata = []
 
-        if args.source_priorities:
+        if args.source_priorities and args.search_sources:
+
             # Define the search order based on source priorities
             source_order = args.search_sources.lower().split(',')
-            priority_order = [int(priority) for priority in args.source_priorities.split(',')]
-            ordered_sources = [source for _, source in sorted(zip(priority_order, source_order))]
-            print(ordered_sources)
+
+            try:
+                # Attempt to convert each priority to an integer
+                priority_order = [int(priority) for priority in args.source_priorities.split(',')]
+
+                # Check if all priorities are valid integers
+                if not all(isinstance(priority, int) for priority in priority_order):
+                    raise ValueError
+
+                ordered_sources = [source for _, source in sorted(zip(priority_order, source_order))]
+
+            except ValueError:
+                print("Error: Each source priority must be an integer. Please provide valid integers for source "
+                      "priorities.")
+                return
 
             for number in input_data:
 
@@ -113,7 +126,8 @@ def main():
                         entry = openLibraryAPI.parse_open_library_data(entry, number, is_oclc, is_isbn)
 
                     # Break out of the loop if data has been retrieved for the current source
-                    if entry.get('oclc') and entry.get('oclc') != '' and entry.get('isbn') and entry.get('isbn') != '' and entry.get('lcc') and entry.get('lcc') != '':
+                    if entry.get('oclc') and entry.get('oclc') != '' and entry.get('isbn') and entry.get(
+                            'isbn') != '' and entry.get('lcc') and entry.get('lcc') != '':
                         break
 
                 # Append the entry to metadata
@@ -125,7 +139,8 @@ def main():
             else:
                 print("No output file requested. If an output file is desired please use the -o or --output option.")
         else:
-            print("Error: Please provide source priorities using the --source-priorities option")
+            print("Error: Please provide source priorities using the --source-priorities option as well as searchable "
+                  "sources using the --search-sources option")
     else:
         print("Error: Please provide an input file using the -i or --input option.")
 
