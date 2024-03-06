@@ -1,3 +1,5 @@
+import json
+import requests
 import harvardAPI
 import locAPI
 import openLibraryAPI

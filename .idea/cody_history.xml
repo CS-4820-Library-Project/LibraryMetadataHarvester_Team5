@@ -28,6 +28,10 @@
           </messages>
           <updatedAt value="2024-02-26T14:12:11.175278" />
         </chat>
+        <chat>
+          <accountId value="VXNlcjozMTc3NjU=" />
+          <internalId value="eebb202a-9364-41c1-a075-06a4c170e17c" />
+        </chat>
       </list>
     </chats>
   </component>

@@ -1,6 +1,7 @@
 import sqlite3
 from sqlite3 import Error
 
+
 class Database:
     def __init__(self, database_name='database.db'):
         """
@@ -73,17 +74,19 @@ class Database:
         """
         try:
             self.open_connection()
-            cursor= self.connection.cursor()
+            cursor = self.connection.cursor()
             # For each OCN provided, insert a new record in the database if it does not already exist.
             for item in ocns:
                 x = cursor.execute('''SELECT * FROM metadata WHERE isbn=? 
                                    AND isbn_source=? AND ocn=? AND ocn_source=? AND lccn=? 
-                                   AND lccn_source=? AND doi=?''', (isbn, "input", item, source, lccn, source, doi)).fetchall()
-                
+                                   AND lccn_source=? AND doi=?''',
+                                   (isbn, "input", item, source, lccn, source, doi)).fetchall()
+
                 if len(x) == 0:
-                    cursor.execute("INSERT INTO metadata (isbn, isbn_source, ocn, ocn_source, lccn, lccn_source, doi) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                                       (isbn, "input", item, source, lccn, source, doi))
-                    
+                    cursor.execute(
+                        "INSERT INTO metadata (isbn, isbn_source, ocn, ocn_source, lccn, lccn_source, doi) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                        (isbn, "input", item, source, lccn, source, doi))
+
                 self.connection.commit()
 
         except sqlite3.Error as e:
@@ -92,7 +95,6 @@ class Database:
 
         finally:
             self.close_connection()
-
 
     def insert_ocn(self, ocn, isbns, lccn, doi, source):
         """
@@ -112,18 +114,20 @@ class Database:
         """
         try:
             self.open_connection()
-            cursor= self.connection.cursor()
+            cursor = self.connection.cursor()
 
             # For each ISBN provided, insert a new record in the database if it does not exits already.
             for item in isbns:
                 x = cursor.execute('''SELECT * FROM metadata WHERE isbn=? 
                                    AND isbn_source=? AND ocn=? AND ocn_source=? AND lccn=? 
-                                   AND lccn_source=? AND doi=?''', (item, source, ocn, "input", lccn, source, doi)).fetchall()
-                
+                                   AND lccn_source=? AND doi=?''',
+                                   (item, source, ocn, "input", lccn, source, doi)).fetchall()
+
                 if len(x) == 0:
-                    cursor.execute("INSERT INTO metadata (isbn, isbn_source, ocn, ocn_source, lccn, lccn_source, doi) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                                       (item, source, ocn, "input", lccn, source, doi))
-                    
+                    cursor.execute(
+                        "INSERT INTO metadata (isbn, isbn_source, ocn, ocn_source, lccn, lccn_source, doi) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                        (item, source, ocn, "input", lccn, source, doi))
+
                 self.connection.commit()
 
         except sqlite3.Error as e:
@@ -132,10 +136,6 @@ class Database:
 
         finally:
             self.close_connection()
-
-
-
-
 
     def is_in_database(self, number, isbn_or_ocn):
         """
@@ -219,7 +219,7 @@ class Database:
                 ocn = "null"
 
             lccn = cursor.execute("SELECT lccn FROM metadata WHERE isbn=? AND lccn_source=?", (isbn, source)).fetchone()
-            lccn_source=source
+            lccn_source = source
             if lccn is None:
                 lccn = "null"
                 lccn_source = "null"
@@ -229,14 +229,13 @@ class Database:
                 doi = "null"
 
             return [isbn, ocn, lccn[0], lccn_source, doi[0]]
-        
+
         except sqlite3.Error as e:
             print(f"Error: {e}")
             return []
-        
+
         finally:
             self.close_connection()
-
 
     def get_ocn_metadata(self, ocn, source):
         """
@@ -274,7 +273,7 @@ class Database:
                 ocn = "null"
 
             lccn = cursor.execute("SELECT lccn FROM metadata WHERE ocn=? AND lccn_source=?", (ocn, source)).fetchone()
-            lccn_source=source
+            lccn_source = source
             if lccn is None:
                 lccn = "null"
                 lccn_source = "null"
@@ -284,15 +283,13 @@ class Database:
                 doi = "null"
 
             return [isbns, ocn, lccn[0], lccn_source, doi[0]]
-        
+
         except sqlite3.Error as e:
             print(f"Error: {e}")
             return []
-        
+
         finally:
             self.close_connection()
-
-
 
     def clear_db(self):
         """
@@ -331,6 +328,3 @@ class Database:
 
         finally:
             self.close_connection()
-
-    
-
