@@ -12,9 +12,10 @@ def parse_harvard_data(entry, number):
             if identifiers.get('type') == 'oclc':
                 oclc = identifiers.get('content', '')
 
-                entry.update({
-                    'oclc': oclc,
-                })
+                if entry.get('oclc') == '' or entry.get('oclc') is None:
+                    entry.update({
+                        'oclc': oclc,
+                    })
         else:
             oclc = ''
             for identifier in identifiers:
@@ -24,18 +25,20 @@ def parse_harvard_data(entry, number):
                 if identifier.get('type') == 'oclc':
                     oclc = identifier.get('content', '')
 
-                entry.update({
-                    'oclc': oclc,
-                })
+                if entry.get('oclc') == '' or entry.get('oclc') is None:
+                    entry.update({
+                        'oclc': oclc,
+                    })
 
         if isinstance(classifications, dict):
             if classifications.get('authority') == 'lcc':
                 lcc = classifications.get('content', '')
 
-                entry.update({
-                    'lcc': lcc,
-                    'source': 'Harvard'
-                })
+                if entry.get('lcc') == '' or entry.get('lcc') is None:
+                    entry.update({
+                        'lcc': lcc,
+                        'source': 'Harvard'
+                    })
         else:
             lcc = ''
             for classification in classifications:
@@ -45,10 +48,11 @@ def parse_harvard_data(entry, number):
                 if classification.get('authority') == 'lcc':
                     lcc = classification.get('content', '')
 
-                entry.update({
-                    'lcc': lcc,
-                    'source': 'Harvard'
-                })
+                if entry.get('lcc') == '' or entry.get('lcc') is None:
+                    entry.update({
+                        'lcc': lcc,
+                        'source': 'Harvard'
+                    })
 
     return entry
 

@@ -23,16 +23,21 @@ def parse_loc_data(entry, number, is_oclc):
                 oclc = oclc_number[0]
 
             if is_oclc:
-                entry.update({
-                    'lcc': lcc,
-                    'source': 'LOC'
-                })
+                if entry.get('lcc') == '' or entry.get('lcc') is None:
+                    entry.update({
+                        'lcc': lcc,
+                        'source': 'LOC'
+                    })
             else:
-                entry.update({
-                    'lcc': lcc,
-                    'oclc': oclc,
-                    'source': 'LOC'
-                })
+                if entry.get('oclc') == '' or entry.get('oclc') is None:
+                    entry.update({
+                        'oclc': oclc
+                    })
+                if entry.get('lcc') == '' or entry.get('lcc') is None:
+                    entry.update({
+                        'lcc': lcc,
+                        'source': 'LOC'
+                    })
     return entry
 
 
