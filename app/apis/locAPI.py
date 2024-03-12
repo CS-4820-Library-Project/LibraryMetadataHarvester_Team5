@@ -1,5 +1,6 @@
 import json
 import requests
+from app import config
 from datetime import timedelta
 from ratelimit import limits, sleep_and_retry
 
@@ -44,12 +45,14 @@ def parse_loc_data(entry, number, is_oclc):
 @sleep_and_retry
 @limits(calls=10, period=timedelta(seconds=10).total_seconds())
 def retrieve_data_from_loc(number):
+    config_file = config.load_config()
+
     base_url = "https://www.loc.gov/search/"
     jsonq = "?fo=json&q="
     full_url = f"{base_url}{jsonq}{number}"
 
     try:
-        response = requests.get(full_url)
+        response = requests.get(full_url, timeout=config_file["search_timeout"])
         response.raise_for_status()  # Raise an HTTPError for bad responses
         data = response.content.decode('utf-8')  # Decode the byte string
 

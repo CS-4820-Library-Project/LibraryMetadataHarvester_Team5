@@ -1,5 +1,6 @@
 import json
 import requests
+from app import config
 
 
 def parse_open_library_data(entry, number, is_oclc, is_isbn):
@@ -47,6 +48,8 @@ def parse_open_library_data(entry, number, is_oclc, is_isbn):
 
 
 def retrieve_data_from_open_library(number, is_oclc, is_isbn):
+    config_file = config.load_config()
+
     if is_isbn:
         base_url = "https://openlibrary.org/api/books?bibkeys=ISBN:"
         json_data = "&format=json&jscmd=data"
@@ -57,7 +60,7 @@ def retrieve_data_from_open_library(number, is_oclc, is_isbn):
         full_url = f"{base_url}{number}{json_data}"
 
     try:
-        response = requests.get(full_url)
+        response = requests.get(full_url, timeout=config_file["search_timeout"])
         response.raise_for_status()  # Raise an HTTPError for bad responses
         data = response.content.decode('utf-8')  # Decode the byte string
 
