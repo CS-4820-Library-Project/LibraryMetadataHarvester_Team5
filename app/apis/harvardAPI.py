@@ -1,5 +1,6 @@
 import json
 import requests
+from app import config
 
 
 def parse_harvard_data(entry, number):
@@ -20,7 +21,7 @@ def parse_harvard_data(entry, number):
             oclc = ''
             for identifier in identifiers:
                 if not isinstance(identifier, dict):
-                    print("Error: Entry formatted incorrectly, skipping this one")
+                    print("Error: Harvard entry formatted incorrectly, skipping this one")
                     continue
                 if identifier.get('type') == 'oclc':
                     oclc = identifier.get('content', '')
@@ -43,7 +44,7 @@ def parse_harvard_data(entry, number):
             lcc = ''
             for classification in classifications:
                 if not isinstance(classification, dict):
-                    print("Error: Entry formatted incorrectly, skipping this one")
+                    print("Error: Harvard entry formatted incorrectly, skipping this one")
                     continue
                 if classification.get('authority') == 'lcc':
                     lcc = classification.get('content', '')
@@ -56,13 +57,16 @@ def parse_harvard_data(entry, number):
 
     return entry
 
+
 def retrieve_data_from_harvard(isbn):
+    config_file = config.load_config()
+
     base_url = "http://webservices.lib.harvard.edu/rest/v3/hollis/mods/isbn/"
     jsonp = "?jsonp=record"
     full_url = f"{base_url}{isbn}{jsonp}"
 
     try:
-        response = requests.get(full_url)
+        response = requests.get(full_url, timeout=config_file["search_timeout"])
         response.raise_for_status()  # Raise an HTTPError for bad responses
         data = response.content.decode('utf-8')  # Decode the byte string
 

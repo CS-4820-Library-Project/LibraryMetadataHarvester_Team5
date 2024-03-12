@@ -1,5 +1,6 @@
 import json
 import requests
+from app import config
 from requests.auth import HTTPBasicAuth
 
 
@@ -27,11 +28,13 @@ def request_authentication_key_from_oclc():
 
 
 def retrieve_data_from_oclc(oclc):
+    config_file = config.load_config()
+
     base_url = "https://americas.discovery.api.oclc.org/worldcat/search/v2/bibs/"
     full_url = f"{base_url}{oclc}"
 
     try:
-        response = requests.get(full_url)
+        response = requests.get(full_url, timeout=config_file["search_timeout"])
         response.raise_for_status()  # Raise an HTTPError for bad responses
         data = response.content.decode('utf-8')  # Decode the byte string
 
