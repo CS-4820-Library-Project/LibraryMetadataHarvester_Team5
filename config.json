@@ -1,14 +1,17 @@
 {
+    "input_type": "ISBN",
     "sources": [
-        "Library of Congress",
-        "WorldCat"
+        "Google Books",
+        "Open Library"
     ],
     "priority_order": [
-        "Library of Congress",
-        "WorldCat"
+        "Google Books",
+        "Open Library"
     ],
+    "include_other": true,
     "include_LCCN": true,
     "include_DOI": true,
     "OCLC_API_key": "YOUR_OCLC_API_KEY",
-    "search_timeout": 60
+    "google_API_key": "",
+    "search_timeout": 80
 }
