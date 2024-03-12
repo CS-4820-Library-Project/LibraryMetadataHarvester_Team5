@@ -56,6 +56,9 @@ def main():
 
     is_isbn = False
     is_oclc = False
+    dont_use_google = False
+    dont_use_oclc = False
+    dont_use_harvard = False
 
     if args.set_google_key:
 
@@ -124,20 +127,22 @@ def main():
                     for source in ordered_sources:
 
                         # Check if Harvard is the next source
-                        if source == 'harvard':
+                        if source == 'harvard' and not dont_use_harvard:
                             if not is_isbn:
                                 print(
-                                    "Harvard API requires ISBN Values as Input. Please input a list of ISBN values to use "
-                                    "this API.")
+                                    "Error: Harvard API requires ISBN Values as Input. Please input a list of ISBN "
+                                    "values to use this API.")
+                                dont_use_harvard = True
                                 break
                             entry = harvardAPI.parse_harvard_data(entry, number)
 
                         # Check if OCLC is the next source
-                        elif source == 'oclc':
+                        elif source == 'oclc' and not dont_use_oclc:
                             if not is_oclc:
                                 print(
-                                    "OCLC API requires OCLC Values as Input. Please input a list of OCLC values to use "
-                                    "this API.")
+                                    "Error: OCLC API requires OCLC Values as Input. Please input a list of OCLC "
+                                    "values to use this API.")
+                                dont_use_oclc = True
                                 break
                             # TODO: If OCLC isn't scrapped from the project, its stuff will go here
 
@@ -149,7 +154,14 @@ def main():
                         elif source == 'openlibrary':
                             entry = openLibraryAPI.parse_open_library_data(entry, number, is_oclc, is_isbn)
 
-                        elif source == 'google':
+                        elif source == 'google' and not dont_use_google:
+                            config_file = config.load_config()
+                            if config_file["google_api_key"] == "YOUR_GOOGLE_API_KEY":
+                                print(
+                                    "Error: Google Books API requires the user to have a Google API key saved using "
+                                    "the --set-google-key option. Please input a key to use this API.")
+                                dont_use_google = True
+                                break
                             entry = googleAPI.parse_google_data(entry, number, is_oclc, is_isbn)
 
                         # Break out of the loop if data has been retrieved for the current source
