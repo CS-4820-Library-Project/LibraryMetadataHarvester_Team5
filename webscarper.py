@@ -1,6 +1,6 @@
 import requests
 from lxml import html
-from LMH_database import Database
+from app.database.LMH_database import Database
 from lmh_logging import log_error, log_info
 
 

@@ -1,6 +1,6 @@
 import unittest
 import sqlite3
-from LMH_database import Database
+from app.database.LMH_database import Database
 
 class TestDatabase(unittest.TestCase):
     def setUp(self):
