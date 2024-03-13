@@ -2,6 +2,7 @@ from app.apis import harvardAPI
 from app.apis import locAPI
 from app.apis import openLibraryAPI
 from app.apis import googleAPI
+from app.database.LMH_database import Database
 from app import config
 import argparse
 import csv
@@ -54,6 +55,8 @@ def main():
     # Parse command-line arguments
     args = parser.parse_args()
 
+    db_manager = Database('LMH_database.db')
+
     is_isbn = False
     is_oclc = False
     dont_use_google = False
@@ -61,7 +64,6 @@ def main():
     dont_use_harvard = False
 
     if args.set_google_key:
-
         config_file = config.load_config()
         config.set_google_key(config_file, args.set_google_key)
         print(f"Google Books API key is now set to {args.set_google_key}")
@@ -120,8 +122,30 @@ def main():
 
                     if is_isbn:
                         entry = {'isbn': number}
+                        if db_manager.is_in_database(number, "ISBN"):
+                            database_entry = db_manager.get_metadata(number, 0)
+                            entry.update({
+                                'oclc': database_entry[1],
+                                'lcc': database_entry[2][0][0],
+                                'source': database_entry[2][0][1]
+                            })
+
                     if is_oclc:
                         entry = {'oclc': number}
+                        if db_manager.is_in_database(number, "OCN"):
+                            database_entry = db_manager.get_metadata(number, 1)
+                            entry.update({
+                                'isbn': database_entry[0],
+                                'lcc': database_entry[2][0][0],
+                                'source': database_entry[2][0][1]
+                            })
+
+                    # Skip this iteration of the loop if all the data has been retrieved from the database
+                    if entry.get('oclc') and entry.get('oclc') != '' and entry.get('isbn') and entry.get(
+                            'isbn') != '' and entry.get('lcc') and entry.get('lcc') != '':
+                        # Append the entry to metadata
+                        metadata.append(entry)
+                        continue
 
                     # Check sources in the specified priority order
                     for source in ordered_sources:
@@ -168,6 +192,8 @@ def main():
                         if entry.get('oclc') and entry.get('oclc') != '' and entry.get('isbn') and entry.get(
                                 'isbn') != '' and entry.get('lcc') and entry.get('lcc') != '':
                             break
+
+                    db_manager.insert(entry.get('isbn', ''), entry.get('oclc', ''), entry.get('lcc', ''), entry.get('source', ''))
 
                     # Append the entry to metadata
                     metadata.append(entry)

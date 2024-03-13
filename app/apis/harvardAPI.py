@@ -54,7 +54,6 @@ def parse_harvard_data(entry, number):
                         'lcc': lcc,
                         'source': 'Harvard'
                     })
-
     return entry
 
 

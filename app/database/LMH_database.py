@@ -71,9 +71,9 @@ class Database:
             self.open_connection()
             cursor = self.connection.cursor()
             # For each OCN provided, insert a new record in the database if it does not already exist.
-            
+
             x = cursor.execute('''SELECT * FROM metadata WHERE isbn=? AND ocn=? AND lccn=? AND lccn_source=?''',
-                                (isbn, ocn, lccn, lccn_source)).fetchall()
+                               (isbn, ocn, lccn, lccn_source)).fetchall()
 
             if len(x) == 0:
                 cursor.execute(
@@ -88,7 +88,6 @@ class Database:
 
         finally:
             self.close_connection()
-
 
     def is_in_database(self, number, isbn_or_ocn):
         """
@@ -164,7 +163,7 @@ class Database:
             cursor = self.connection.cursor()
 
             # if number is an ISBN
-            if type==0:
+            if type == 0:
                 ocn = cursor.execute("SELECT ocn FROM metadata WHERE isbn=?", (number,)).fetchone()
                 ocn = ocn[0] if ocn else "null"
 
@@ -172,8 +171,8 @@ class Database:
                 lccn_list = [(row[0], row[1]) for row in llist]
 
                 return [number, ocn, lccn_list]
-            
-            if type==1:
+
+            if type == 1:
                 isbn = cursor.execute("SELECT isbn FROM metadata WHERE ocn=?", (number,)).fetchone()
                 if isbn is None:
                     isbn = "null"
@@ -182,18 +181,15 @@ class Database:
                 lccn_list = [(row[0], row[1]) for row in llist]
                 return [isbn, number, lccn_list]
 
-
             else:
                 return []
-            
+
         except sqlite3.Error as e:
             print(f"Error: {e}")
             return []
 
         finally:
             self.close_connection()
-
-    
 
     def clear_db(self):
         """
