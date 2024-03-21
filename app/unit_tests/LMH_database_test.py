@@ -162,7 +162,7 @@ class TestDatabase(unittest.TestCase):
     def test_isbn_not_in_db(self):
         result = self.db_manager.get_metadata("1748129424", 0)
         self.assertIsInstance(result, list)
-        self.assertEqual(result, ["1748129424", 'null', []])
+        self.assertEqual(result, ["1748129424", '', []])
 
     
     
