@@ -1,6 +1,10 @@
 import unittest
 import sqlite3
-from app.database.LMH_database import Database
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "database")))
+from LMH_database import Database
+
 
 class TestDatabase(unittest.TestCase):
     def setUp(self):
@@ -79,7 +83,7 @@ class TestDatabase(unittest.TestCase):
 
 
 
-    def test_get_metadata(self):
+    def test_get_isbn_metadata(self):
         # make sure insert function is working first
         isbn = "1234522890"
         ocn = "82940283"
@@ -91,9 +95,13 @@ class TestDatabase(unittest.TestCase):
 
         
         
+        self.db_manager.open_connection()
+        cursor = self.db_manager.connection.cursor()
+        cursor.execute("INSERT INTO metadata (isbn, ocn, lccn, lccn_source) VALUES (?, ?, ?, ?)", (isbn, ocn, lccn, source))
+        cursor.execute("INSERT INTO metadata (isbn, ocn, lccn, lccn_source) VALUES (?, ?, ?, ?)", (isbn, ocn2, lccn2, source2))
+        self.db_manager.connection.commit()
+        self.db_manager.close_connection()
         
-        self.db_manager.insert(isbn, ocn, lccn, source)
-        self.db_manager.insert(isbn, ocn2, lccn2, source2)
 
         
         result = self.db_manager.get_metadata(isbn, 0)
@@ -107,16 +115,54 @@ class TestDatabase(unittest.TestCase):
         
 
     
+    def test_get_ocn_metadata(self):
+        # make sure insert function is working first
+        isbn = "1234522890"
+        ocn = "82940283"
+        source = "test_source4"
+        lccn = "lccn-831"
+        source2 = "test-source5"
+        lccn2 = "lccn-184"
+        ocn2 = "14715783"
+
         
+        
+        self.db_manager.open_connection()
+        cursor = self.db_manager.connection.cursor()
+        cursor.execute("INSERT INTO metadata (isbn, ocn, lccn, lccn_source) VALUES (?, ?, ?, ?)", (isbn, ocn, lccn, source))
+        cursor.execute("INSERT INTO metadata (isbn, ocn, lccn, lccn_source) VALUES (?, ?, ?, ?)", (isbn, ocn, lccn2, source2))
+        self.db_manager.connection.commit()
+        self.db_manager.close_connection()
+        
+
+        
+        result = self.db_manager.get_metadata(ocn, 1)
+        
+        
+
+        
+        self.assertIsInstance(result, list)
+        self.assertEqual(len(result), 3)  
+        self.assertEqual(result, [isbn, ocn, [(lccn,source), (lccn2,source2)]])
+
+
 
     def test_clear_db(self):
         self.db_manager.open_connection()
         
         cursor = self.db_manager.connection.cursor()
+        cursor.execute("INSERT INTO metadata (isbn, ocn, lccn, lccn_source) VALUES (?, ?, ?, ?)", ("14214215", "812941", "ABC 2002", "OL"))
+        self.db_manager.connection.commit()
         self.db_manager.clear_db()
         cursor.execute("SELECT * FROM metadata")
         result = cursor.fetchall()
         self.assertEqual(len(result), 0)
+
+
+    def test_isbn_not_in_db(self):
+        result = self.db_manager.get_metadata("1748129424", 0)
+        self.assertIsInstance(result, list)
+        self.assertEqual(result, ["1748129424", 'null', []])
 
     
     

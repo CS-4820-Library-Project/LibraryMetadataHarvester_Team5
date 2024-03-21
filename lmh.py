@@ -6,7 +6,12 @@ from app.database.LMH_database import Database
 from app import config
 import argparse
 import csv
+import re
 
+
+def validate_lc_call_number(call_number):
+    pattern = re.compile(r'^[A-Z]{1,3}.+')
+    return bool(pattern.fullmatch(call_number))
 
 def read_input_file(file_path):
     with open(file_path, 'r') as file:

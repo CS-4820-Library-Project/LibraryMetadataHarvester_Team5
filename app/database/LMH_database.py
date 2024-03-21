@@ -176,6 +176,8 @@ class Database:
                 isbn = cursor.execute("SELECT isbn FROM metadata WHERE ocn=?", (number,)).fetchone()
                 if isbn is None:
                     isbn = "null"
+                else:
+                    isbn = isbn[0]
 
                 llist = cursor.execute("SELECT lccn, lccn_source FROM metadata WHERE ocn=?", (number,)).fetchall()
                 lccn_list = [(row[0], row[1]) for row in llist]
