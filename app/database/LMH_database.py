@@ -172,8 +172,10 @@ class Database:
                     ocn = ocn[0]
 
                 llist = cursor.execute("SELECT lccn, lccn_source FROM metadata WHERE isbn=?", (number,)).fetchall()
-                
-                lccn_list = [(row[0], row[1]) for row in llist]
+                if llist == []:
+                    lccn_list = ["", ""]
+                else:
+                    lccn_list = [(row[0], row[1]) for row in llist]
 
                 return [number, ocn, lccn_list]
 
@@ -185,7 +187,10 @@ class Database:
                     isbn = isbn[0]
 
                 llist = cursor.execute("SELECT lccn, lccn_source FROM metadata WHERE ocn=?", (number,)).fetchall()
-                lccn_list = [(row[0], row[1]) for row in llist]
+                if llist ==[]:
+                    lccn_list = ["", ""]
+                else:
+                    lccn_list = [(row[0], row[1]) for row in llist]
                 return [isbn, number, lccn_list]
 
             else:
