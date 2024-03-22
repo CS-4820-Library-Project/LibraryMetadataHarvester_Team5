@@ -9,7 +9,11 @@ def load_config():
         # If config file doesn't exist, create a new one with default values
         default_config = {
             "google_api_key": "YOUR_GOOGLE_API_KEY",
-            "search_timeout": 10  # Default search timeout in seconds
+            "search_timeout": 10,  # Default search timeout in seconds
+            "retrieve_isbn": True,
+            "retrieve_oclc": True,
+            "retrieve_lccn": True,
+            "appearance_mode": "Dark"
         }
         save_config(default_config)
         return default_config
@@ -27,4 +31,24 @@ def set_search_timeout(config, search_timeout):
 
 def set_google_key(config, google_key):
     config["google_api_key"] = google_key
+    save_config(config)
+
+
+def set_isbn_retrieval(config, isbn_retrieval):
+    config["retrieve_isbn"] = isbn_retrieval
+    save_config(config)
+
+
+def set_oclc_retrieval(config, oclc_retrieval):
+    config["retrieve_oclc"] = oclc_retrieval
+    save_config(config)
+
+
+def set_lccn_retrieval(config, lccn_retrieval):
+    config["retrieve_lccn"] = lccn_retrieval
+    save_config(config)
+
+
+def set_appearance_mode(config, appearance_mode):
+    config["appearance_mode"] = appearance_mode
     save_config(config)
