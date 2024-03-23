@@ -3,8 +3,8 @@ import requests
 from app import config
 
 
-def parse_harvard_data(entry, number):
-    harvard_data = retrieve_data_from_harvard(number)
+def parse_harvard_data(entry, number, retrieval_settings):
+    harvard_data = retrieve_data_from_harvard(number, False)
     if harvard_data:
         classifications = harvard_data.get('mods', {}).get('classification', [])
         identifiers = harvard_data.get('mods', {}).get('identifier', [])
@@ -13,7 +13,7 @@ def parse_harvard_data(entry, number):
             if identifiers.get('type') == 'oclc':
                 oclc = identifiers.get('content', '')
 
-                if entry.get('oclc') == '' or entry.get('oclc') is None:
+                if entry.get('oclc') == '' or entry.get('oclc') is None and retrieval_settings['retrieve_oclc']:
                     entry.update({
                         'oclc': oclc,
                     })
@@ -26,7 +26,7 @@ def parse_harvard_data(entry, number):
                 if identifier.get('type') == 'oclc':
                     oclc = identifier.get('content', '')
 
-                if entry.get('oclc') == '' or entry.get('oclc') is None:
+                if entry.get('oclc') == '' or entry.get('oclc') is None and retrieval_settings['retrieve_oclc']:
                     entry.update({
                         'oclc': oclc,
                     })
@@ -35,7 +35,7 @@ def parse_harvard_data(entry, number):
             if classifications.get('authority') == 'lcc':
                 lcc = classifications.get('content', '')
 
-                if entry.get('lcc') == '' or entry.get('lcc') is None:
+                if entry.get('lcc') == '' or entry.get('lcc') is None and retrieval_settings['retrieve_lccn']:
                     entry.update({
                         'lcc': lcc,
                         'source': 'Harvard'
@@ -49,7 +49,7 @@ def parse_harvard_data(entry, number):
                 if classification.get('authority') == 'lcc':
                     lcc = classification.get('content', '')
 
-                if entry.get('lcc') == '' or entry.get('lcc') is None:
+                if entry.get('lcc') == '' or entry.get('lcc') is None and retrieval_settings['retrieve_lccn']:
                     entry.update({
                         'lcc': lcc,
                         'source': 'Harvard'
@@ -57,7 +57,7 @@ def parse_harvard_data(entry, number):
     return entry
 
 
-def retrieve_data_from_harvard(isbn):
+def retrieve_data_from_harvard(isbn, looking_for_status):
     config_file = config.load_config()
 
     base_url = "http://webservices.lib.harvard.edu/rest/v3/hollis/mods/isbn/"
@@ -65,6 +65,10 @@ def retrieve_data_from_harvard(isbn):
     full_url = f"{base_url}{isbn}{jsonp}"
 
     try:
+        if looking_for_status:
+            response = requests.get(full_url, timeout=config_file["search_timeout"])
+            return response.status_code
+
         response = requests.get(full_url, timeout=config_file["search_timeout"])
         response.raise_for_status()  # Raise an HTTPError for bad responses
         data = response.content.decode('utf-8')  # Decode the byte string

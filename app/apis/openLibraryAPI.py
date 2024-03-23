@@ -3,8 +3,8 @@ import requests
 from app import config
 
 
-def parse_open_library_data(entry, number, is_oclc, is_isbn):
-    open_library_data = retrieve_data_from_open_library(number, is_oclc, is_isbn)
+def parse_open_library_data(entry, number, retrieval_settings, is_oclc, is_isbn):
+    open_library_data = retrieve_data_from_open_library(number, False, is_oclc, is_isbn)
     if open_library_data:
         if is_isbn:
             book_data = open_library_data.get(f"ISBN:{number}", {})
@@ -12,13 +12,13 @@ def parse_open_library_data(entry, number, is_oclc, is_isbn):
             call_number = book_data.get("classifications", {}).get("lc_classifications", '')
             if oclc_number:
                 oclc = oclc_number[0]
-                if entry.get('oclc') == '' or entry.get('oclc') is None:
+                if entry.get('oclc') == '' or entry.get('oclc') is None and retrieval_settings['retrieve_oclc']:
                     entry.update({
                         'oclc': oclc,
                     })
             if call_number:
                 lcc = call_number[0]
-                if entry.get('lcc' == '') or entry.get('lcc') is None:
+                if entry.get('lcc' == '') or entry.get('lcc') is None and retrieval_settings['retrieve_lccn']:
                     entry.update({
                         'lcc': lcc,
                         'source': 'OpenLibrary'
@@ -32,14 +32,14 @@ def parse_open_library_data(entry, number, is_oclc, is_isbn):
             if isbn_number:
                 isbn = isbn_number[0]
 
-                if entry.get('isbn') == '' or entry.get('isbn') is None:
+                if entry.get('isbn') == '' or entry.get('isbn') is None and retrieval_settings['retrieve_isbn']:
                     entry.update({
                         'isbn': isbn,
                     })
             if call_number:
                 lcc = call_number[0]
 
-                if entry.get('lcc' == '') or entry.get('lcc') is None:
+                if entry.get('lcc' == '') or entry.get('lcc') is None and retrieval_settings['retrieve_lccn']:
                     entry.update({
                         'lcc': lcc,
                         'source': 'OpenLibrary'
@@ -47,7 +47,7 @@ def parse_open_library_data(entry, number, is_oclc, is_isbn):
     return entry
 
 
-def retrieve_data_from_open_library(number, is_oclc, is_isbn):
+def retrieve_data_from_open_library(number, looking_for_status, is_oclc, is_isbn):
     config_file = config.load_config()
 
     if is_isbn:
@@ -60,6 +60,10 @@ def retrieve_data_from_open_library(number, is_oclc, is_isbn):
         full_url = f"{base_url}{number}{json_data}"
 
     try:
+        if looking_for_status:
+            response = requests.get(full_url, timeout=config_file["search_timeout"])
+            return response.status_code
+
         response = requests.get(full_url, timeout=config_file["search_timeout"])
         response.raise_for_status()  # Raise an HTTPError for bad responses
         data = response.content.decode('utf-8')  # Decode the byte string

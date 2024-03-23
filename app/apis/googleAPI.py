@@ -5,8 +5,8 @@ from datetime import timedelta
 from ratelimit import limits, sleep_and_retry
 
 
-def parse_google_data(entry, number, is_oclc, is_isbn):
-    google_data = retrieve_data_from_google(number, is_oclc, is_isbn)
+def parse_google_data(entry, number, retrieval_settings, is_oclc, is_isbn):
+    google_data = retrieve_data_from_google(number, False, is_oclc, is_isbn)
     if google_data:
         if 'items' in google_data:
             if is_isbn:
@@ -17,7 +17,7 @@ def parse_google_data(entry, number, is_oclc, is_isbn):
                         continue
                     if identifier.get('type') == 'other' and identifier.get('identifier')[:4] == "OCLC":
                         oclc = identifier.get('identifier')[5:]
-                        if entry.get('oclc') == '' or entry.get('oclc') is None:
+                        if entry.get('oclc') == '' or entry.get('oclc') is None and retrieval_settings['retrieve_oclc']:
                             entry.update({
                                 'oclc': oclc,
                             })
@@ -29,7 +29,7 @@ def parse_google_data(entry, number, is_oclc, is_isbn):
                         continue
                     if identifier.get('type') == 'ISBN_13':
                         isbn = identifier.get('identifier')
-                        if entry.get('isbn') == '' or entry.get('isbn') is None:
+                        if entry.get('isbn') == '' or entry.get('isbn') is None and retrieval_settings['retrieve_isbn']:
                             entry.update({
                                 'isbn': isbn,
                             })
@@ -40,7 +40,7 @@ def parse_google_data(entry, number, is_oclc, is_isbn):
                             continue
                         if identifier.get('type') == 'ISBN_10':
                             isbn = identifier.get('identifier')
-                            if entry.get('isbn') == '' or entry.get('isbn') is None:
+                            if entry.get('isbn') == '' or entry.get('isbn') is None and retrieval_settings['retrieve_isbn']:
                                 entry.update({
                                     'isbn': isbn,
                                 })
@@ -49,7 +49,7 @@ def parse_google_data(entry, number, is_oclc, is_isbn):
 
 @sleep_and_retry
 @limits(calls=10, period=timedelta(seconds=10).total_seconds())
-def retrieve_data_from_google(number, is_oclc, is_isbn):
+def retrieve_data_from_google(number, looking_for_status, is_oclc, is_isbn):
     config_file = config.load_config()
 
     if is_isbn:
@@ -64,6 +64,10 @@ def retrieve_data_from_google(number, is_oclc, is_isbn):
         full_url = f"{base_url}{number}{key}{api_key}"
 
     try:
+        if looking_for_status:
+            response = requests.get(full_url, timeout=config_file["search_timeout"])
+            return response.status_code
+
         response = requests.get(full_url, timeout=config_file["search_timeout"])
         response.raise_for_status()  # Raise an HTTPError for bad responses
         data = response.content.decode('utf-8')  # Decode the byte string

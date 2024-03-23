@@ -5,8 +5,8 @@ from datetime import timedelta
 from ratelimit import limits, sleep_and_retry
 
 
-def parse_loc_data(entry, number, is_oclc):
-    loc_data = retrieve_data_from_loc(number)
+def parse_loc_data(entry, number, retrieval_settings, is_oclc):
+    loc_data = retrieve_data_from_loc(number, False)
     if loc_data:
         results = loc_data.get('results', {})
 
@@ -24,17 +24,17 @@ def parse_loc_data(entry, number, is_oclc):
                 oclc = oclc_number[0]
 
             if is_oclc:
-                if entry.get('lcc') == '' or entry.get('lcc') is None:
+                if entry.get('lcc') == '' or entry.get('lcc') is None and retrieval_settings['retrieve_lccn']:
                     entry.update({
                         'lcc': lcc,
                         'source': 'LOC'
                     })
             else:
-                if entry.get('oclc') == '' or entry.get('oclc') is None:
+                if entry.get('oclc') == '' or entry.get('oclc') is None and retrieval_settings['retrieve_oclc']:
                     entry.update({
                         'oclc': oclc
                     })
-                if entry.get('lcc') == '' or entry.get('lcc') is None:
+                if entry.get('lcc') == '' or entry.get('lcc') is None and retrieval_settings['retrieve_lccn']:
                     entry.update({
                         'lcc': lcc,
                         'source': 'LOC'
@@ -44,7 +44,7 @@ def parse_loc_data(entry, number, is_oclc):
 
 @sleep_and_retry
 @limits(calls=10, period=timedelta(seconds=10).total_seconds())
-def retrieve_data_from_loc(number):
+def retrieve_data_from_loc(number, looking_for_status):
     config_file = config.load_config()
 
     base_url = "https://www.loc.gov/search/"
@@ -52,6 +52,10 @@ def retrieve_data_from_loc(number):
     full_url = f"{base_url}{jsonq}{number}"
 
     try:
+        if looking_for_status:
+            response = requests.get(full_url, timeout=config_file["search_timeout"])
+            return response.status_code
+
         response = requests.get(full_url, timeout=config_file["search_timeout"])
         response.raise_for_status()  # Raise an HTTPError for bad responses
         data = response.content.decode('utf-8')  # Decode the byte string
