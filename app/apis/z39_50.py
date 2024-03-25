@@ -1,5 +1,6 @@
-from app import config
 import subprocess
+from app import config
+from app import callNumberValidation
 
 
 def parse_text_marc(text_marc):
@@ -47,9 +48,10 @@ def run_yaz_client(isbn, target_string):
 def parse_data(entry, number, retrieval_settings):
     for library, target_string in target_sources.items():
         library_data = run_yaz_client(number, target_string)
-        if entry.get('lcc') == '' or entry.get('lcc') is None and retrieval_settings['retrieve_lccn']:
+        if (entry.get('lccn') == '' or entry.get('lccn') is None and retrieval_settings['retrieve_lccn'] and
+                callNumberValidation.validate_lc_call_number(library_data['lccn'])):
             entry.update({
-                'lcc': library_data['lccn'],
+                'lccn': library_data['lccn'],
                 'source': library
             })
         if entry.get('oclc') == '' or entry.get('oclc') is None and retrieval_settings['retrieve_oclc']:
