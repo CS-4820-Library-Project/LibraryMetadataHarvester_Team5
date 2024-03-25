@@ -165,20 +165,32 @@ class Database:
             # if number is an ISBN
             if type == 0:
                 ocn = cursor.execute("SELECT ocn FROM metadata WHERE isbn=?", (number,)).fetchone()
-                ocn = ocn[0] if ocn else "null"
+                
+                if ocn is None:
+                    ocn = ""
+                else:
+                    ocn = ocn[0]
 
                 llist = cursor.execute("SELECT lccn, lccn_source FROM metadata WHERE isbn=?", (number,)).fetchall()
-                lccn_list = [(row[0], row[1]) for row in llist]
+                if llist == []:
+                    lccn_list = ["", ""]
+                else:
+                    lccn_list = [(row[0], row[1]) for row in llist]
 
                 return [number, ocn, lccn_list]
 
             if type == 1:
                 isbn = cursor.execute("SELECT isbn FROM metadata WHERE ocn=?", (number,)).fetchone()
                 if isbn is None:
-                    isbn = "null"
+                    isbn = ""
+                else:
+                    isbn = isbn[0]
 
                 llist = cursor.execute("SELECT lccn, lccn_source FROM metadata WHERE ocn=?", (number,)).fetchall()
-                lccn_list = [(row[0], row[1]) for row in llist]
+                if llist ==[]:
+                    lccn_list = ["", ""]
+                else:
+                    lccn_list = [(row[0], row[1]) for row in llist]
                 return [isbn, number, lccn_list]
 
             else:

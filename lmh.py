@@ -7,10 +7,15 @@ from CTkMessagebox import *
 import customtkinter
 import threading
 import csv
+import re
 
 ui_map = {}
 stop_search_flag = False
 
+
+def validate_lc_call_number(call_number):
+    pattern = re.compile(r'^[A-Z]{1,3}.+')
+    return bool(pattern.fullmatch(call_number))
 
 def read_input_file(file_path):
     with open(file_path, 'r') as file:
