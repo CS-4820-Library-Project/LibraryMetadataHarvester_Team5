@@ -1,4 +1,4 @@
-from app.apis import harvardAPI, openLibraryAPI, locAPI, googleAPI
+from app.apis import harvardAPI, openLibraryAPI, locAPI, googleAPI, z39_50
 from app.database.LMH_database import Database
 from app import config
 from tkinter import filedialog
@@ -249,7 +249,7 @@ def search():
     db_manager = Database('LMH_database.db')
 
     retrieval_settings = {}
-    dont_use_api = {"dont_continue_search": False, "dont_use_harvard": False, "dont_use_openlibrary": False, "dont_use_loc": False, "dont_use_google": False}
+    dont_use_api = {"dont_continue_search": False, "dont_use_harvard": False, "dont_use_openlibrary": False, "dont_use_loc": False, "dont_use_google": False, "dont_use_z3950": False}
     is_isbn = False
     is_oclc = False
     global stop_search_flag
@@ -384,6 +384,10 @@ def search():
             elif source == 'Google Books' and not dont_use_api["dont_use_google"]:
                 entry = googleAPI.parse_google_data(entry, number, retrieval_settings, is_oclc, is_isbn)
 
+            # Check if Z39.50 is the next source
+            elif source == 'Z39.50' and not dont_use_api["dont_use_z3950"]:
+                entry = z39_50.parse_data(entry, number, retrieval_settings)
+
             # Break out of the loop if data has been retrieved for the current source excluding stuff we said we
             # didn't want
             if (((entry.get('isbn') and entry.get('isbn') != '') or not retrieval_settings['retrieve_isbn']) and
@@ -473,6 +477,19 @@ def check_status(dont_use_api, ordered_sources, number, is_isbn, is_oclc):
             else:
                 append_to_log("Google Books: Offline")
                 dont_use_api["dont_use_google"] = True
+
+        elif source == 'Z39.50':
+            if not is_isbn:
+                message = CTkMessagebox(title="Warning",
+                                        message="Z39.50 requires ISBN values as input. Currently you have input "
+                                                "oclc values. Would you like to proceed without using Z39.50?",
+                                        icon="warning", option_1="Yes", option_2="No")
+                if message.get() == "No":
+                    dont_use_api["dont_continue_search"] = True
+                    continue
+                elif message.get() == "Yes":
+                    dont_use_api["dont_use_z3950"] = True
+                    continue
 
     return dont_use_api
 
