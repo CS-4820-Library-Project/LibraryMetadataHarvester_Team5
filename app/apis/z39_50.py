@@ -19,7 +19,7 @@ def parse_text_marc(text_marc):
     return marc_data
 
 
-def run_yaz_client(isbn, target_string):  # Requires the user to input the path to yaz-client.exe file
+def run_yaz_client(isbn, target_string):
     config_file = config.load_config()
 
     commands = f"""
@@ -31,10 +31,10 @@ def run_yaz_client(isbn, target_string):  # Requires the user to input the path 
     process = subprocess.run(['C:\\Program Files\\YAZ\\bin\\yaz-client'], input=commands, text=True, encoding='utf-8',
                              stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=config_file["search_timeout"])
 
-    # Check for errors
+    # # Exit if there was an error
     if process.stderr and "Innovative Interfaces Inc. Z39.50 SERVER version 1.1" not in process.stderr:
         print("Error: ", process.stderr)
-        return None  # Exit if there was an error
+        return None
 
     # Process the MARC record text
     if process.stdout:
