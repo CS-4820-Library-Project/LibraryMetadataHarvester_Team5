@@ -1,6 +1,7 @@
 import json
 import requests
 from app import config
+from app import callNumberValidation
 
 
 def parse_harvard_data(entry, number, retrieval_settings):
@@ -33,25 +34,27 @@ def parse_harvard_data(entry, number, retrieval_settings):
 
         if isinstance(classifications, dict):
             if classifications.get('authority') == 'lcc':
-                lcc = classifications.get('content', '')
+                lccn = classifications.get('content', '')
 
-                if entry.get('lcc') == '' or entry.get('lcc') is None and retrieval_settings['retrieve_lccn']:
+                if (entry.get('lccn') == '' or entry.get('lccn') is None and retrieval_settings['retrieve_lccn'] and
+                        callNumberValidation.validate_lc_call_number(lccn)):
                     entry.update({
-                        'lcc': lcc,
+                        'lccn': lccn,
                         'source': 'Harvard'
                     })
         else:
-            lcc = ''
+            lccn = ''
             for classification in classifications:
                 if not isinstance(classification, dict):
                     print("Error: Harvard entry formatted incorrectly, skipping this one")
                     continue
                 if classification.get('authority') == 'lcc':
-                    lcc = classification.get('content', '')
+                    lccn = classification.get('content', '')
 
-                if entry.get('lcc') == '' or entry.get('lcc') is None and retrieval_settings['retrieve_lccn']:
+                if (entry.get('lccn') == '' or entry.get('lccn') is None and retrieval_settings['retrieve_lccn'] and
+                        callNumberValidation.validate_lc_call_number(lccn)):
                     entry.update({
-                        'lcc': lcc,
+                        'lccn': lccn,
                         'source': 'Harvard'
                     })
     return entry

@@ -1,6 +1,7 @@
 import json
 import requests
 from app import config
+from app import callNumberValidation
 from datetime import timedelta
 from ratelimit import limits, sleep_and_retry
 
@@ -10,7 +11,7 @@ def parse_loc_data(entry, number, retrieval_settings, is_oclc):
     if loc_data:
         results = loc_data.get('results', {})
 
-        lcc = ''
+        lccn = ''
         oclc = ''
         for result in results:
             if not isinstance(result, dict):
@@ -18,15 +19,16 @@ def parse_loc_data(entry, number, retrieval_settings, is_oclc):
                 continue
             if result.get('item').get('call_number'):
                 call_number = (result.get('item').get('call_number'))
-                lcc = call_number[0]
+                lccn = call_number[0]
             if result.get('number_oclc') and not is_oclc:
                 oclc_number = (result.get('number_oclc'))
                 oclc = oclc_number[0]
 
             if is_oclc:
-                if entry.get('lcc') == '' or entry.get('lcc') is None and retrieval_settings['retrieve_lccn']:
+                if (entry.get('lccn') == '' or entry.get('lccn') is None and retrieval_settings['retrieve_lccn'] and
+                        callNumberValidation.validate_lc_call_number(lccn)):
                     entry.update({
-                        'lcc': lcc,
+                        'lccn': lccn,
                         'source': 'LOC'
                     })
             else:
@@ -34,9 +36,10 @@ def parse_loc_data(entry, number, retrieval_settings, is_oclc):
                     entry.update({
                         'oclc': oclc
                     })
-                if entry.get('lcc') == '' or entry.get('lcc') is None and retrieval_settings['retrieve_lccn']:
+                if (entry.get('lccn') == '' or entry.get('lccn') is None and retrieval_settings['retrieve_lccn'] and
+                        callNumberValidation.validate_lc_call_number(lccn)):
                     entry.update({
-                        'lcc': lcc,
+                        'lccn': lccn,
                         'source': 'LOC'
                     })
     return entry

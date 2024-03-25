@@ -7,15 +7,10 @@ from CTkMessagebox import *
 import customtkinter
 import threading
 import csv
-import re
 
 ui_map = {}
 stop_search_flag = False
 
-
-def validate_lc_call_number(call_number):
-    pattern = re.compile(r'^[A-Z]{1,3}.+')
-    return bool(pattern.fullmatch(call_number))
 
 def read_input_file(file_path):
     with open(file_path, 'r') as file:
@@ -35,7 +30,7 @@ def write_to_output(metadata, output_file):
             row = [
                 entry.get('isbn', ''),
                 entry.get('oclc', ''),
-                entry.get('lcc', ''),
+                entry.get('lccn', ''),
                 entry.get('source', '')
             ]
             writer.writerow(row)
@@ -254,7 +249,8 @@ def search():
     db_manager = Database('LMH_database.db')
 
     retrieval_settings = {}
-    dont_use_api = {"dont_continue_search": False, "dont_use_harvard": False, "dont_use_openlibrary": False, "dont_use_loc": False, "dont_use_google": False, "dont_use_z3950": False}
+    dont_use_api = {"dont_continue_search": False, "dont_use_harvard": False, "dont_use_openlibrary": False,
+                    "dont_use_loc": False, "dont_use_google": False, "dont_use_z3950": False}
     is_isbn = False
     is_oclc = False
     global stop_search_flag
@@ -278,7 +274,8 @@ def search():
     if len(input_data[0]) >= 10:
         is_isbn = True
         append_to_log("Assuming list contains ISBN values.")
-        if retrieval_settings['retrieve_isbn'] and not retrieval_settings['retrieve_oclc'] and not retrieval_settings['retrieve_lccn']:
+        if retrieval_settings['retrieve_isbn'] and not retrieval_settings['retrieve_oclc'] and not retrieval_settings[
+            'retrieve_lccn']:
             message = CTkMessagebox(title="Warning",
                                     message="You currently only have retrieval for isbns selected while also inputting "
                                             "a list of isbns. Do you still want to proceed?",
@@ -288,7 +285,8 @@ def search():
     elif len(input_data[0]) <= 9:
         is_oclc = True
         append_to_log("Assuming list contains OCLC values.")
-        if not retrieval_settings['retrieve_isbn'] and retrieval_settings['retrieve_oclc'] and not retrieval_settings['retrieve_lccn']:
+        if not retrieval_settings['retrieve_isbn'] and retrieval_settings['retrieve_oclc'] and not retrieval_settings[
+            'retrieve_lccn']:
             message = CTkMessagebox(title="Warning",
                                     message="You currently only have retrieval for oclc values selected while also "
                                             "inputting a list of oclc values. Do you still want to proceed?",
@@ -340,7 +338,7 @@ def search():
                     })
                 if retrieval_settings['retrieve_lccn']:
                     entry.update({
-                        'lcc': database_entry[2][0][0],
+                        'lccn': database_entry[2][0][0],
                         'source': database_entry[2][0][1]
                     })
 
@@ -355,7 +353,7 @@ def search():
                     })
                 if retrieval_settings['retrieve_lccn']:
                     entry.update({
-                        'lcc': database_entry[2][0][0],
+                        'lccn': database_entry[2][0][0],
                         'source': database_entry[2][0][1]
                     })
 
@@ -363,7 +361,7 @@ def search():
         # said we didn't want it
         if (((entry.get('isbn') and entry.get('isbn') != '') or not retrieval_settings['retrieve_isbn']) and
                 ((entry.get('oclc') and entry.get('oclc') != '') or not retrieval_settings['retrieve_oclc']) and
-                ((entry.get('lcc') and entry.get('lcc') != '') or not retrieval_settings['retrieve_lccn'])):
+                ((entry.get('lccn') and entry.get('lccn') != '') or not retrieval_settings['retrieve_lccn'])):
             # Append the entry to metadata
             metadata.append(entry)
             # Update the progress bar
@@ -397,10 +395,10 @@ def search():
             # didn't want
             if (((entry.get('isbn') and entry.get('isbn') != '') or not retrieval_settings['retrieve_isbn']) and
                     ((entry.get('oclc') and entry.get('oclc') != '') or not retrieval_settings['retrieve_oclc']) and
-                    ((entry.get('lcc') and entry.get('lcc') != '') or not retrieval_settings['retrieve_lccn'])):
+                    ((entry.get('lccn') and entry.get('lccn') != '') or not retrieval_settings['retrieve_lccn'])):
                 break
 
-        db_manager.insert(entry.get('isbn', ''), entry.get('oclc', ''), entry.get('lcc', ''),
+        db_manager.insert(entry.get('isbn', ''), entry.get('oclc', ''), entry.get('lccn', ''),
                           entry.get('source', ''))
 
         # Append the entry to metadata

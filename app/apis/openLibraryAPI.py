@@ -1,6 +1,7 @@
 import json
 import requests
 from app import config
+from app import callNumberValidation
 
 
 def parse_open_library_data(entry, number, retrieval_settings, is_oclc, is_isbn):
@@ -17,10 +18,11 @@ def parse_open_library_data(entry, number, retrieval_settings, is_oclc, is_isbn)
                         'oclc': oclc,
                     })
             if call_number:
-                lcc = call_number[0]
-                if entry.get('lcc' == '') or entry.get('lcc') is None and retrieval_settings['retrieve_lccn']:
+                lccn = call_number[0]
+                if (entry.get('lccn' == '') or entry.get('lccn') is None and retrieval_settings['retrieve_lccn'] and
+                        callNumberValidation.validate_lc_call_number(lccn)):
                     entry.update({
-                        'lcc': lcc,
+                        'lccn': lccn,
                         'source': 'OpenLibrary'
                     })
         if is_oclc:
@@ -37,11 +39,12 @@ def parse_open_library_data(entry, number, retrieval_settings, is_oclc, is_isbn)
                         'isbn': isbn,
                     })
             if call_number:
-                lcc = call_number[0]
+                lccn = call_number[0]
 
-                if entry.get('lcc' == '') or entry.get('lcc') is None and retrieval_settings['retrieve_lccn']:
+                if (entry.get('lccn' == '') or entry.get('lccn') is None and retrieval_settings['retrieve_lccn'] and
+                        callNumberValidation.validate_lc_call_number(lccn)):
                     entry.update({
-                        'lcc': lcc,
+                        'lccn': lccn,
                         'source': 'OpenLibrary'
                     })
     return entry
