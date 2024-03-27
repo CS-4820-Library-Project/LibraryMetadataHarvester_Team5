@@ -53,7 +53,10 @@ class Database:
         finally:
             self.close_connection()
 
-    def insert(self, isbn, ocn, lccn, lccn_source):
+
+    
+
+    def insert(self, isbn, ocn, lccn, lccn_source, is_isbn):
         """
         Function that inserts an ISBN OCN and LCCN into the database.
 
@@ -66,19 +69,50 @@ class Database:
 
         -lccn_source: String that represensts source used to get LCCN.
 
+        -is_isbn: True or False
+
         """
         try:
             self.open_connection()
             cursor = self.connection.cursor()
-            # For each OCN provided, insert a new record in the database if it does not already exist.
+            
+             
+            if (is_isbn):
+                x = cursor.execute("SELECT * FROM metadata WHERE isbn = ?", (isbn,)).fetchall()
 
-            x = cursor.execute('''SELECT * FROM metadata WHERE isbn=? AND ocn=? AND lccn=? AND lccn_source=?''',
-                               (isbn, ocn, lccn, lccn_source)).fetchall()
+                
+                if (len(x)==0):
+                    cursor.execute("INSERT INTO metadata (isbn, ocn, lccn, lccn_source) VALUES (?, ?, ?, ?)", (isbn, ocn, lccn, lccn_source))
+                    
 
-            if len(x) == 0:
-                cursor.execute(
+                else:
+                    cursor.execute("SELECT ocn, lccn FROM metadata WHERE isbn=?", (isbn,))
+                    result = cursor.fetchone()
+                    if (result[0]==""):
+                        cursor.execute("UPDATE metadata SET ocn = ? WHERE isbn = ?", (ocn, isbn))
+                        
+                    if (result[1]==""):
+                        cursor.execute("UPDATE metadata SET lccn = ?, lccn_source = ? WHERE isbn = ?", (lccn, lccn_source, isbn))
+                        
+
+            else:
+                x = cursor.execute("SELECT * FROM metadata WHERE ocn = ?", (ocn,)).fetchall()
+
+                if (len(x)==0):
+                    cursor.execute(
                     "INSERT INTO metadata (isbn, ocn, lccn, lccn_source) VALUES (?, ?, ?, ?)",
                     (isbn, ocn, lccn, lccn_source))
+                    
+
+                else:
+                    cursor.execute("SELECT isbn, lccn FROM metadata WHERE ocn=?", (ocn,))
+                    result = cursor.fetchone()
+                    if (result[0]==""):
+                        cursor.execute("UPDATE metadata SET isbn = ? WHERE ocn = ?", (isbn, ocn))
+                        
+                    if (result[1]==""):
+                        cursor.execute("UPDATE metadata SET lccn = ?, lccn_source = ? WHERE ocn = ?", (lccn, lccn_source, ocn))
+                        
 
             self.connection.commit()
 
@@ -87,6 +121,7 @@ class Database:
             self.connection.rollback()
 
         finally:
+           
             self.close_connection()
 
     def is_in_database(self, number, isbn_or_ocn):
@@ -240,3 +275,4 @@ class Database:
 
         finally:
             self.close_connection()
+
