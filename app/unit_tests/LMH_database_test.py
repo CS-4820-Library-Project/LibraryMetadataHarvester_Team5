@@ -37,7 +37,7 @@ class TestDatabase(unittest.TestCase):
         source = "test_source"
 
         # Insert ISBN data into the database
-        self.db_manager.insert(isbn=isbn, ocn=ocn, lccn=lccn, lccn_source=source)
+        self.db_manager.insert(isbn, ocn, lccn, source, True)
 
         # Retrieve the inserted data from the database
         self.db_manager.open_connection()
@@ -64,7 +64,7 @@ class TestDatabase(unittest.TestCase):
         source = "test_source"
 
         # Insert ISBN data into the database
-        self.db_manager.insert(isbn, ocn, lccn, source)
+        self.db_manager.insert(isbn, ocn, lccn, source, False)
         
 
         # Retrieve the inserted data from the database
