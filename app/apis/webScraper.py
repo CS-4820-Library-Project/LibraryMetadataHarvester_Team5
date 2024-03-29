@@ -126,8 +126,6 @@ def parse_data(entry, number, retrieval_settings, library):
                     if download_webpage(doc_url, doc_file_path):
                         lccn_values = extract_lccn_numbers(doc_file_path)
                         oclc_values = extract_oclc_numbers(doc_file_path)
-                        print(lccn_values)
-                        print(oclc_values)
 
                         if lccn_values:
                             if (entry.get('lccn') == '' or entry.get('lccn') is None and

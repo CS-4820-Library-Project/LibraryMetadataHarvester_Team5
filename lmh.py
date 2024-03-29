@@ -476,6 +476,7 @@ def check_thread_status(thread):
             ui_map['timeout_button'].configure(state="disabled")
             ui_map['google_key_button'].configure(state="disabled")
             ui_map['z3950_button'].configure(state="disabled")
+            ui_map['web_scraping_button'].configure(state="disabled")
             ui_map['start_button'].configure(state="disabled")
         if not stop_search_flag and not stop_button_has_been_enabled:
             stop_button_has_been_enabled = True
@@ -495,6 +496,7 @@ def check_thread_status(thread):
         ui_map['timeout_button'].configure(state="normal")
         ui_map['google_key_button'].configure(state="normal")
         ui_map['z3950_button'].configure(state="normal")
+        ui_map['web_scraping_button'].configure(state="normal")
         ui_map['start_button'].configure(state="normal")
         ui_map['stop_button'].configure(state="disabled")
     return
@@ -529,7 +531,13 @@ def search():
         if ui_map['z3950_config_window']:
             ui_map['z3950_config_window'].destroy()
     except KeyError as e:
-        print("No config window to close.")
+        print("No Z39.50 config window to close.")
+
+    try:
+        if ui_map['web_scraping_config_window']:
+            ui_map['web_scraping_config_window'].destroy()
+    except KeyError as e:
+        print("No web scraping config window to close.")
 
     input_data = read_input_file(ui_map['file_path'].cget('text'))
 
@@ -673,7 +681,7 @@ def search():
                 break
 
         db_manager.insert(entry.get('isbn', ''), entry.get('oclc', ''), entry.get('lccn', ''),
-                          entry.get('source', ''))
+                          entry.get('source', ''), is_isbn)
 
         # Append the entry to metadata
         metadata.append(entry)
