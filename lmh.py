@@ -146,7 +146,7 @@ def open_z3950_config():
 
 def create_config_window():
     z3950_config_window = customtkinter.CTkToplevel()
-    z3950_config_window.title("Z39.50 Source Settings")
+    z3950_config_window.title("Source Settings")
     # Set window size
     window_width = 420
     window_height = 325
