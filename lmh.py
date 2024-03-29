@@ -110,7 +110,7 @@ def set_lccn_retrieval(boolean):
 def open_z3950_config():
     config_file = config.load_config()
 
-    z3950_config_window = create_z3950_config_window()
+    z3950_config_window = create_config_window()
     z3950_config_window.grid_rowconfigure((0, 3), weight=1)
     z3950_config_window.grid_columnconfigure((0, 3), weight=1)
     ui_map['z3950_config_window'] = z3950_config_window
@@ -144,9 +144,9 @@ def open_z3950_config():
     remove_source_button.grid(column=2, row=1, padx=10, pady=(10, 70), sticky="sew")
 
 
-def create_z3950_config_window():
+def create_config_window():
     z3950_config_window = customtkinter.CTkToplevel()
-    z3950_config_window.title("Z39.50 Source Settings")
+    z3950_config_window.title("Source Settings")
     # Set window size
     window_width = 420
     window_height = 325
@@ -215,7 +215,7 @@ def add_z3950_source():
 def open_web_scraping_config():
     config_file = config.load_config()
 
-    web_scraping_config_window = create_z3950_config_window()
+    web_scraping_config_window = create_config_window()
     web_scraping_config_window.grid_rowconfigure((0, 3), weight=1)
     web_scraping_config_window.grid_columnconfigure((0, 3), weight=1)
     ui_map['web_scraping_config_window'] = web_scraping_config_window
@@ -253,26 +253,6 @@ def open_web_scraping_config():
     remove_source_button = customtkinter.CTkButton(master=web_scraping_config_window, text="Remove Source", width=50,
                                                    command=remove_web_scraping_source)
     remove_source_button.grid(column=2, row=1, padx=10, pady=(10, 50), sticky="sew")
-
-
-def create_web_scraping_config_window():
-    web_scraping_config_window = customtkinter.CTkToplevel()
-    web_scraping_config_window.title("Web Scraping Source Settings")
-    # Set window size
-    window_width = 420
-    window_height = 375
-    # Get screen width and height
-    screen_width = web_scraping_config_window.winfo_screenwidth()
-    screen_height = web_scraping_config_window.winfo_screenheight()
-    # Calculate window position
-    x_coordinate = (screen_width - window_width) // 2
-    y_coordinate = (screen_height - window_height) // 2
-    # Move window to calculated position
-    web_scraping_config_window.geometry(f"{window_width}x{window_height}+{x_coordinate}+{y_coordinate}")
-    web_scraping_config_window.resizable(False, False)
-    # Parent the window to the root window
-    web_scraping_config_window.transient(ui_map['root'])
-    return web_scraping_config_window
 
 
 def remove_web_scraping_source():
@@ -476,6 +456,7 @@ def check_thread_status(thread):
             ui_map['timeout_button'].configure(state="disabled")
             ui_map['google_key_button'].configure(state="disabled")
             ui_map['z3950_button'].configure(state="disabled")
+            ui_map['web_scraping_button'].configure(state="disabled")
             ui_map['start_button'].configure(state="disabled")
         if not stop_search_flag and not stop_button_has_been_enabled:
             stop_button_has_been_enabled = True
@@ -495,6 +476,7 @@ def check_thread_status(thread):
         ui_map['timeout_button'].configure(state="normal")
         ui_map['google_key_button'].configure(state="normal")
         ui_map['z3950_button'].configure(state="normal")
+        ui_map['web_scraping_button'].configure(state="normal")
         ui_map['start_button'].configure(state="normal")
         ui_map['stop_button'].configure(state="disabled")
     return
@@ -529,7 +511,13 @@ def search():
         if ui_map['z3950_config_window']:
             ui_map['z3950_config_window'].destroy()
     except KeyError as e:
-        print("No config window to close.")
+        print("No Z39.50 config window to close.")
+
+    try:
+        if ui_map['web_scraping_config_window']:
+            ui_map['web_scraping_config_window'].destroy()
+    except KeyError as e:
+        print("No web scraping config window to close.")
 
     input_data = read_input_file(ui_map['file_path'].cget('text'))
 
@@ -673,7 +661,7 @@ def search():
                 break
 
         db_manager.insert(entry.get('isbn', ''), entry.get('oclc', ''), entry.get('lccn', ''),
-                          entry.get('source', ''))
+                          entry.get('source', ''), is_isbn)
 
         # Append the entry to metadata
         metadata.append(entry)
