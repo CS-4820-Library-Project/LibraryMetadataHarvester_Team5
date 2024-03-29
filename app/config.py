@@ -35,6 +35,7 @@ def load_config():
                 "UPenn": "na03.alma.exlibrisgroup.com:1921/01UPENN_INST",
                 "NYPL": "nyst.sirsi.net:8419/unicorn"
             },
+            "web_scraping_sources": {},
             "ordered_sources": []
         }
         save_config(default_config)
@@ -83,6 +84,16 @@ def add_z3950_source(config, source_name, source_link):
 
 def remove_z3950_source(config, source):
     del config["z3950_sources"][source]
+    save_config(config)
+
+
+def add_web_scraping_source(config, source_name, query_url, base_url):
+    config["web_scraping_sources"][source_name] = [query_url, base_url]
+    save_config(config)
+
+
+def remove_web_scraping_source(config, source):
+    del config["web_scraping_sources"][source]
     save_config(config)
 
 

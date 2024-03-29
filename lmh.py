@@ -1,4 +1,4 @@
-from app.apis import harvardAPI, openLibraryAPI, locAPI, googleAPI, z39_50
+from app.apis import harvardAPI, openLibraryAPI, locAPI, googleAPI, z3950, webScraper
 from app.database.LMH_database import Database
 from app import config
 from tkinter import filedialog
@@ -128,7 +128,7 @@ def open_z3950_config():
     ui_map['z3950_sources_list_box'] = z3950_sources_list_box
 
     add_source_button = customtkinter.CTkButton(master=z3950_config_window, text="Add Source", width=50,
-                                                command=add_source)
+                                                command=add_z3950_source)
     add_source_button.grid(column=2, row=1, padx=10, pady=(60, 10), sticky="new")
 
     source_name_field = customtkinter.CTkEntry(master=z3950_config_window, placeholder_text="Enter Source Name")
@@ -140,7 +140,7 @@ def open_z3950_config():
     ui_map["source_link_field"] = source_link_field
 
     remove_source_button = customtkinter.CTkButton(master=z3950_config_window, text="Remove Source", width=50,
-                                                   command=remove_source)
+                                                   command=remove_z3950_source)
     remove_source_button.grid(column=2, row=1, padx=10, pady=(10, 70), sticky="sew")
 
 
@@ -164,7 +164,7 @@ def create_z3950_config_window():
     return z3950_config_window
 
 
-def remove_source():
+def remove_z3950_source():
     z3950_sources_list_box = ui_map['z3950_sources_list_box']
     if len(z3950_sources_list_box.curselection()) == 0:
         CTkMessagebox(title="Error", message="You must select an element to remove.",
@@ -180,7 +180,8 @@ def remove_source():
     all_sources = [z3950_sources_list_box.get(i) for i in range(z3950_sources_list_box.size())]
     selected_source = [all_sources[index] for index in priorities]
     config.remove_z3950_source(config_file, selected_source[0])
-    config.remove_source(config_file, str(selected_source[0]) + " (Z39.50)")
+    if config_file["ordered_sources"]:
+        config.remove_source(config_file, str(selected_source[0]) + " (Z39.50)")
 
     z3950_sources_list_box.delete(z3950_sources_list_box.curselection()[0])
 
@@ -191,7 +192,7 @@ def remove_source():
             ui_map['sources_list_box'].delete(index)
 
 
-def add_source():
+def add_z3950_source():
     if ui_map['source_name_field'].get() is None or ui_map['source_name_field'].get() == '':
         CTkMessagebox(title="Error", message="You must specify a source name if you wish to add a source.",
                       icon="cancel")
@@ -204,10 +205,127 @@ def add_source():
     config_file = config.load_config()
 
     config.add_z3950_source(config_file, ui_map['source_name_field'].get(), ui_map['source_link_field'].get())
-    config.append_source(config_file, ui_map['source_name_field'].get() + " (Z39.50)")
+    if config_file["ordered_sources"]:
+        config.append_source(config_file, ui_map['source_name_field'].get() + " (Z39.50)")
 
     ui_map['sources_list_box'].insert("END", ui_map['source_name_field'].get() + " (Z39.50)")
     ui_map['z3950_sources_list_box'].insert("END", ui_map['source_name_field'].get())
+
+
+def open_web_scraping_config():
+    config_file = config.load_config()
+
+    web_scraping_config_window = create_z3950_config_window()
+    web_scraping_config_window.grid_rowconfigure((0, 3), weight=1)
+    web_scraping_config_window.grid_columnconfigure((0, 3), weight=1)
+    ui_map['web_scraping_config_window'] = web_scraping_config_window
+
+    frame = customtkinter.CTkFrame(master=web_scraping_config_window)
+    frame.grid(column=1, row=1, pady=10, sticky="nsew")
+
+    web_scraping_sources_label = customtkinter.CTkLabel(master=frame, text="Web Scraping Sources")
+    web_scraping_sources_label.grid(column=1, row=1, padx=25, pady=0, sticky="nsew")
+
+    web_scraping_sources_list_box = CTkListbox(master=frame, multiple_selection=True, height=220)
+    for key, value in config_file["web_scraping_sources"].items():
+        web_scraping_sources_list_box.insert("END", key)
+    web_scraping_sources_list_box.grid(column=1, row=2, padx=20, pady=(0, 10), sticky="nsew")
+    ui_map['web_scraping_sources_list_box'] = web_scraping_sources_list_box
+
+    add_source_button = customtkinter.CTkButton(master=web_scraping_config_window, text="Add Source", width=50,
+                                                command=add_web_scraping_source)
+    add_source_button.grid(column=2, row=1, padx=10, pady=(40, 10), sticky="new")
+
+    web_source_name_field = customtkinter.CTkEntry(master=web_scraping_config_window, placeholder_text="Enter "
+                                                                                                       "Source Name")
+    web_source_name_field.grid(column=2, row=1, padx=20, pady=(80, 20), sticky="new")
+    ui_map["web_source_name_field"] = web_source_name_field
+
+    source_query_url_field = customtkinter.CTkEntry(master=web_scraping_config_window, placeholder_text="Enter "
+                                                                                                        "Query URL")
+    source_query_url_field.grid(column=2, row=1, padx=20, pady=(120, 20), sticky="new")
+    ui_map["source_query_url_field"] = source_query_url_field
+
+    source_base_url_field = customtkinter.CTkEntry(master=web_scraping_config_window, placeholder_text="Enter Base URL")
+    source_base_url_field.grid(column=2, row=1, padx=20, pady=(160, 20), sticky="new")
+    ui_map["source_base_url_field"] = source_base_url_field
+
+    remove_source_button = customtkinter.CTkButton(master=web_scraping_config_window, text="Remove Source", width=50,
+                                                   command=remove_web_scraping_source)
+    remove_source_button.grid(column=2, row=1, padx=10, pady=(10, 50), sticky="sew")
+
+
+def create_web_scraping_config_window():
+    web_scraping_config_window = customtkinter.CTkToplevel()
+    web_scraping_config_window.title("Web Scraping Source Settings")
+    # Set window size
+    window_width = 420
+    window_height = 375
+    # Get screen width and height
+    screen_width = web_scraping_config_window.winfo_screenwidth()
+    screen_height = web_scraping_config_window.winfo_screenheight()
+    # Calculate window position
+    x_coordinate = (screen_width - window_width) // 2
+    y_coordinate = (screen_height - window_height) // 2
+    # Move window to calculated position
+    web_scraping_config_window.geometry(f"{window_width}x{window_height}+{x_coordinate}+{y_coordinate}")
+    web_scraping_config_window.resizable(False, False)
+    # Parent the window to the root window
+    web_scraping_config_window.transient(ui_map['root'])
+    return web_scraping_config_window
+
+
+def remove_web_scraping_source():
+    web_scraping_sources_list_box = ui_map['web_scraping_sources_list_box']
+    if len(web_scraping_sources_list_box.curselection()) == 0:
+        CTkMessagebox(title="Error", message="You must select an element to remove.",
+                      icon="cancel")
+        return
+    if len(web_scraping_sources_list_box.curselection()) > 1:
+        CTkMessagebox(title="Error", message="You can only remove one element at a time.", icon="cancel")
+        return
+
+    config_file = config.load_config()
+
+    priorities = web_scraping_sources_list_box.curselection()
+    all_sources = [web_scraping_sources_list_box.get(i) for i in range(web_scraping_sources_list_box.size())]
+    selected_source = [all_sources[index] for index in priorities]
+    config.remove_web_scraping_source(config_file, selected_source[0])
+    if config_file["ordered_sources"]:
+        config.remove_source(config_file, str(selected_source[0]) + " (Web)")
+
+    web_scraping_sources_list_box.delete(web_scraping_sources_list_box.curselection()[0])
+
+    source_order = [ui_map['sources_list_box'].get(i) for i in range(ui_map['sources_list_box'].size())]
+
+    for index, source in enumerate(source_order):
+        if source == str(selected_source[0]) + " (Web)":
+            ui_map['sources_list_box'].delete(index)
+
+
+def add_web_scraping_source():
+    if ui_map['web_source_name_field'].get() is None or ui_map['web_source_name_field'].get() == '':
+        CTkMessagebox(title="Error", message="You must specify a source name if you wish to add a source.",
+                      icon="cancel")
+        return
+    if ui_map['source_query_url_field'].get() is None or ui_map['source_query_url_field'].get() == '':
+        CTkMessagebox(title="Error", message="You must specify a query URL if you wish to add a source.",
+                      icon="cancel")
+        return
+    if ui_map['source_base_url_field'].get() is None or ui_map['source_base_url_field'].get() == '':
+        CTkMessagebox(title="Error", message="You must specify a base URL if you wish to add a source.",
+                      icon="cancel")
+        return
+
+    config_file = config.load_config()
+
+    config.add_web_scraping_source(config_file, ui_map['web_source_name_field'].get(),
+                                   ui_map['source_query_url_field'].get(), ui_map['source_base_url_field'].get())
+    if config_file["ordered_sources"]:
+        config.append_source(config_file, ui_map['web_source_name_field'].get() + " (Web)")
+
+    ui_map['sources_list_box'].insert("END", ui_map['web_source_name_field'].get() + " (Web)")
+    ui_map['web_scraping_sources_list_box'].insert("END", ui_map['web_source_name_field'].get())
 
 
 def change_google_key():
@@ -424,7 +542,7 @@ def search():
         is_isbn = True
         append_to_log("Assuming list contains ISBN values.")
         if (retrieval_settings['retrieve_isbn'] and not retrieval_settings['retrieve_oclc'] and not
-                retrieval_settings['retrieve_lccn']):
+        retrieval_settings['retrieve_lccn']):
             message = CTkMessagebox(title="Warning",
                                     message="You currently only have retrieval for ISBNs selected while also inputting "
                                             "a list of ISBNs. Do you still want to proceed?",
@@ -435,7 +553,7 @@ def search():
         is_oclc = True
         append_to_log("Assuming list contains OCLC values.")
         if (not retrieval_settings['retrieve_isbn'] and retrieval_settings['retrieve_oclc'] and not
-                retrieval_settings['retrieve_lccn']):
+        retrieval_settings['retrieve_lccn']):
             message = CTkMessagebox(title="Warning",
                                     message="You currently only have retrieval for OCLC values selected while also "
                                             "inputting a list of OCLC values. Do you still want to proceed?",
@@ -541,7 +659,11 @@ def search():
 
             # Check if a Z39.50 is the next source
             elif source.split("(")[0].strip() in config_file["z3950_sources"] and not dont_use_api["dont_use_z3950"]:
-                entry = z39_50.parse_data(entry, number, retrieval_settings, source.split("(")[0].strip())
+                entry = z3950.parse_data(entry, number, retrieval_settings, source.split("(")[0].strip())
+
+            # Check if a Web Scraping is the next source
+            elif source.split("(")[0].strip() in config_file["web_scraping_sources"]:
+                entry = webScraper.parse_data(entry, number, retrieval_settings, source.split("(")[0].strip())
 
             # Break out of the loop if data has been retrieved for the current source excluding stuff we said we
             # didn't want
@@ -768,6 +890,8 @@ def main():
             sources_list_box.insert("END", item)
         for item in config_file["z3950_sources"]:
             sources_list_box.insert("END", item + " (Z39.50)")
+        for item in config_file["web_scraping_sources"]:
+            sources_list_box.insert("END", item + " (Web)")
     sources_list_box.grid(row=0, column=0, padx=(80, 10), pady=10)
     ui_map['sources_list_box'] = sources_list_box
 
@@ -816,9 +940,9 @@ def main():
     timeout_button.grid(row=3, column=0, padx=10, pady=(10, 5))
     ui_map['timeout_button'] = timeout_button
 
-    timeout_button_tooltip = CTkToolTip(timeout_button, border_width=1, message="Timeout value (in seconds) and is \n"
-                                                                                "on a per value basis per each\n"
-                                                                                "selected source.")
+    CTkToolTip(timeout_button, border_width=1, message="Timeout value (in seconds) and is \n"
+                                                       "on a per value basis per each\n"
+                                                       "selected source.")
 
     google_key_button = customtkinter.CTkButton(tabview.tab("Settings"), text="Change Google API Key", width=50,
                                                 command=change_google_key)
@@ -829,6 +953,12 @@ def main():
                                            command=open_z3950_config)
     z3950_button.grid(row=5, column=0, padx=10, pady=5)
     ui_map['z3950_button'] = z3950_button
+
+    web_scraping_button = customtkinter.CTkButton(tabview.tab("Settings"), text="Change Web Scraping Settings",
+                                                  width=50,
+                                                  command=open_web_scraping_config)
+    web_scraping_button.grid(row=6, column=0, padx=10, pady=5)
+    ui_map['web_scraping_button'] = web_scraping_button
 
     # Set default values
 
