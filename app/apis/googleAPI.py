@@ -1,6 +1,6 @@
 import json
 import requests
-from app import config
+from app import config, logs
 from datetime import timedelta
 from ratelimit import limits, sleep_and_retry
 
@@ -13,7 +13,7 @@ def parse_google_data(entry, number, retrieval_settings, is_oclc, is_isbn):
                 book_data = google_data['items'][0].get('volumeInfo', {}).get('industryIdentifiers', [{}])
                 for identifier in book_data:
                     if not isinstance(identifier, dict):
-                        print("Error: Google entry formatted incorrectly, skipping this one")
+                        logs.log_warning("Google entry formatted incorrectly, skipping this one")
                         continue
                     if identifier.get('type') == 'other' and identifier.get('identifier')[:4] == "OCLC":
                         oclc = identifier.get('identifier')[5:]
@@ -25,7 +25,7 @@ def parse_google_data(entry, number, retrieval_settings, is_oclc, is_isbn):
                 book_data = google_data['items'][0].get('volumeInfo', {}).get('industryIdentifiers', [{}])
                 for identifier in book_data:
                     if not isinstance(identifier, dict):
-                        print("Error: Entry formatted incorrectly, skipping this one")
+                        logs.log_warning("Google entry formatted incorrectly, skipping this one")
                         continue
                     if identifier.get('type') == 'ISBN_13':
                         isbn = identifier.get('identifier')
@@ -36,7 +36,7 @@ def parse_google_data(entry, number, retrieval_settings, is_oclc, is_isbn):
                 if entry.get('isbn') == '' or entry.get('isbn') is None:
                     for identifier in book_data:
                         if not isinstance(identifier, dict):
-                            print("Error: Google entry formatted incorrectly, skipping this one")
+                            logs.log_warning("Google entry formatted incorrectly, skipping this one")
                             continue
                         if identifier.get('type') == 'ISBN_10':
                             isbn = identifier.get('identifier')
@@ -77,5 +77,5 @@ def retrieve_data_from_google(number, looking_for_status, is_oclc, is_isbn):
 
         return parsed_data
     except requests.exceptions.RequestException as e:
-        print(f"Error retrieving data from Google Books: {e}")
+        logs.log_error(f"Error retrieving data from Google Books: {e}")
         return None

@@ -1,6 +1,6 @@
 import json
 import requests
-from app import config
+from app import config, logs
 from app import callNumberValidation
 
 
@@ -76,5 +76,5 @@ def retrieve_data_from_open_library(number, looking_for_status, is_oclc, is_isbn
 
         return parsed_data
     except requests.exceptions.RequestException as e:
-        print(f"Error retrieving data from Open Library: {e}")
+        logs.log_error(f"Error retrieving data from Open Library: {e}")
         return None

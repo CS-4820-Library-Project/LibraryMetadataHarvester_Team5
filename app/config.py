@@ -14,6 +14,7 @@ def load_config():
             "retrieve_oclc": True,
             "retrieve_lccn": True,
             "appearance_mode": "Dark",
+            "yaz_client_path": "",
             "z3950_sources": {
                 "Yale": "z3950.library.yale.edu:7090/voyager",
                 "UVa": "virgo.lib.virginia.edu:2200/unicorn",
@@ -69,6 +70,11 @@ def set_oclc_retrieval(config, oclc_retrieval):
 
 def set_lccn_retrieval(config, lccn_retrieval):
     config["retrieve_lccn"] = lccn_retrieval
+    save_config(config)
+
+
+def set_yaz_client_path(config, yaz_client_path):
+    config["yaz_client_path"] = yaz_client_path
     save_config(config)
 
 
