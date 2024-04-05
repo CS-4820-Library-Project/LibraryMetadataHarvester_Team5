@@ -1,6 +1,6 @@
 from app.apis import harvardAPI, openLibraryAPI, locAPI, googleAPI, z3950, webScraper
 from app.database.LMH_database import Database
-from app import config
+from app import config, logs
 from tkinter import filedialog
 from CTkListbox import *
 from CTkToolTip import *
@@ -12,7 +12,6 @@ import csv
 ui_map = {}
 stop_search_flag = False
 ui_has_been_disabled = False
-stop_button_has_been_enabled = False
 
 
 def read_input_file(file_path):
@@ -45,7 +44,7 @@ def create_window_and_move_to_center():
     root = customtkinter.CTk()
     root.title("Library Metadata Harvester")
     # Set window size
-    window_width = 680
+    window_width = 675
     window_height = 580
     # Get screen width and height
     screen_width = root.winfo_screenwidth()
@@ -354,6 +353,17 @@ def set_timeout_value(timeout_value):
         return
 
 
+def change_yaz_client_path():
+    config_file = config.load_config()
+    yaz_client_path = filedialog.askopenfilename()
+    if yaz_client_path != "":
+        config.set_yaz_client_path(config_file, yaz_client_path)
+        CTkMessagebox(title="Info", message=f"Yaz client path is now set to {yaz_client_path}.")
+        ui_map['yaz_client_tooltip'].configure(message=f"Change the path of the YAZ Client.\n "
+                                                       f"Currently the yaz client path is set"
+                                                       f" to:\n {yaz_client_path}")
+
+
 def change_input_type_isbn():
     ui_map['oclc_radio_button'].deselect()
     ui_map['input_type'] = "isbn"
@@ -365,7 +375,7 @@ def change_input_type_oclc():
 
 
 def choose_file():
-    file_path = filedialog.askopenfilename(filetypes=[("Text files", "*.txt")])
+    file_path = filedialog.askopenfilename()
     file_path_label = ui_map.get('file_path')
     if file_path:
         file_path_label.configure(text=file_path)
@@ -397,6 +407,16 @@ def move_source_down():
     if sources_list_box.curselection() is not None:
         for index in sources_list_box.curselection():
             sources_list_box.move_down(index)
+
+
+def save_order():
+    config_file = config.load_config()
+
+    sources_list_box = ui_map['sources_list_box']
+    source_order = [sources_list_box.get(i) for i in range(sources_list_box.size())]
+
+    config.save_source_configuration(config_file, source_order)
+    CTkMessagebox(title="Info", message="Source order has now been saved.")
 
 
 def append_to_log(text):
@@ -440,7 +460,6 @@ def start_search():
 
 def check_thread_status(thread):
     global ui_has_been_disabled
-    global stop_button_has_been_enabled
     global stop_search_flag
     if thread.is_alive():
         if not ui_has_been_disabled:
@@ -458,9 +477,6 @@ def check_thread_status(thread):
             ui_map['z3950_button'].configure(state="disabled")
             ui_map['web_scraping_button'].configure(state="disabled")
             ui_map['start_button'].configure(state="disabled")
-        if not stop_search_flag and not stop_button_has_been_enabled:
-            stop_button_has_been_enabled = True
-            ui_map['stop_button'].configure(state="normal")
         ui_map['root'].after(200, check_thread_status, thread)
     else:
         has_been_disabled = False
@@ -478,7 +494,6 @@ def check_thread_status(thread):
         ui_map['z3950_button'].configure(state="normal")
         ui_map['web_scraping_button'].configure(state="normal")
         ui_map['start_button'].configure(state="normal")
-        ui_map['stop_button'].configure(state="disabled")
     return
 
 
@@ -511,22 +526,18 @@ def search():
         if ui_map['z3950_config_window']:
             ui_map['z3950_config_window'].destroy()
     except KeyError as e:
-        print("No Z39.50 config window to close.")
+        logs.log_info("No Z39.50 config window to close.")
 
     try:
         if ui_map['web_scraping_config_window']:
             ui_map['web_scraping_config_window'].destroy()
     except KeyError as e:
-        print("No web scraping config window to close.")
+        logs.log_info("No web scraping config window to close.")
 
     input_data = read_input_file(ui_map['file_path'].cget('text'))
 
     # Check which type of input data we have
-    if ui_map["input_type"] is None:
-        CTkMessagebox(title="Error", message="You must select an input type. Please select either ISBN or OCLC.",
-                      icon="cancel")
-        return
-    elif ui_map["input_type"] == "isbn":
+    if ui_map["input_type"] == "isbn":
         is_isbn = True
         append_to_log("Assuming list contains ISBN values.")
         if (retrieval_settings['retrieve_isbn'] and not retrieval_settings['retrieve_oclc'] and not
@@ -550,7 +561,7 @@ def search():
                 return
 
     progress_window = create_progress_window()
-    progress_window.grid_rowconfigure((0, 3), weight=1)
+    progress_window.grid_rowconfigure((0, 4), weight=1)
     progress_window.grid_columnconfigure((0, 2), weight=1)
 
     logs_label = customtkinter.CTkLabel(master=progress_window, text="Please wait while the search process is "
@@ -560,6 +571,10 @@ def search():
     progress_bar = customtkinter.CTkProgressBar(master=progress_window, orientation="horizontal")
     progress_bar.grid(column=1, row=2, padx=20, pady=10, sticky="nsew")
     progress_bar.set(0)
+
+    stop_button = customtkinter.CTkButton(progress_window, text="Stop Search", width=125, command=stop_search)
+    stop_button.grid(column=1, row=3, padx=20, pady=10)
+    ui_map['stop_button'] = stop_button
 
     # Initialize metadata list
     metadata = []
@@ -582,7 +597,7 @@ def search():
     for index, number in enumerate(input_data):
 
         if stop_search_flag is True:
-            append_to_log("Process is being forcefully stopped... Please wait... Last Processed value was: " + number)
+            append_to_log("Process is being manually stopped... Please wait... Last Processed value was: " + number)
             break
 
         if is_isbn:
@@ -673,6 +688,9 @@ def search():
         # Write metadata to output file
         write_to_output(metadata, ui_map['output_file_field'].get())
 
+    global ui_has_been_disabled
+    ui_has_been_disabled = False
+
     progress_window.destroy()
 
     CTkMessagebox(title="Process Complete", message="Process is complete.", icon="check")
@@ -757,6 +775,18 @@ def check_status(dont_use_api, ordered_sources, number, is_isbn, is_oclc):
                 elif message.get() == "Yes":
                     dont_use_api["dont_use_z3950"] = True
                     continue
+            if config_file["yaz_client_path"] == "":
+                message = CTkMessagebox(title="Warning",
+                                        message="Currently no path has been given for the Yaz Client which is required "
+                                                "to use any Z39.50 sources. Would you like to proceed without using "
+                                                "any Z39.50 sources?",
+                                        icon="warning", option_1="Yes", option_2="No")
+                if message.get() == "No":
+                    dont_use_api["dont_continue_search"] = True
+                    continue
+                elif message.get() == "Yes":
+                    dont_use_api["dont_use_z3950"] = True
+                    continue
 
     return dont_use_api
 
@@ -811,14 +841,9 @@ def main():
                                         font=customtkinter.CTkFont(size=15, weight="bold"))
     logo_label.grid(row=0, column=0, padx=10, pady=(20, 10))
 
-    start_button = customtkinter.CTkButton(sidebar_frame, text="Start Search", width=50, command=start_search)
-    start_button.grid(row=1, column=0, padx=20, pady=10, sticky="w")
+    start_button = customtkinter.CTkButton(sidebar_frame, text="Start Search", command=start_search)
+    start_button.grid(row=1, column=0, padx=20, pady=10)
     ui_map['start_button'] = start_button
-
-    stop_button = customtkinter.CTkButton(sidebar_frame, text="Stop Search", width=50, state="disabled",
-                                          command=stop_search)
-    stop_button.grid(row=1, column=0, padx=20, pady=10, sticky="e")
-    ui_map['stop_button'] = stop_button
 
     ui_map['input_type'] = None
 
@@ -826,7 +851,7 @@ def main():
     isbn_radio_button.grid(row=2, column=0, padx=(40, 10), pady=(5, 0), sticky="w")
     ui_map['isbn_radio_button'] = isbn_radio_button
 
-    oclc_radio_button = customtkinter.CTkRadioButton(master=sidebar_frame, text="OCLC", command=change_input_type_oclc)
+    oclc_radio_button = customtkinter.CTkRadioButton(master=sidebar_frame, text="OCN", command=change_input_type_oclc)
     oclc_radio_button.grid(row=2, column=0, padx=(10, 0), pady=(5, 0), sticky="e")
     ui_map['oclc_radio_button'] = oclc_radio_button
 
@@ -861,6 +886,7 @@ def main():
     tabview.add("Settings")
     tabview.tab("Sources").grid_columnconfigure(0, weight=1)
     tabview.tab("Settings").grid_columnconfigure(0, weight=1)
+    tabview.tab("Settings").grid_rowconfigure(0, weight=1)
 
     logs_label = customtkinter.CTkLabel(root, text="Search Information:")
     logs_label.grid(row=1, column=1, padx=25, pady=(10, 0), sticky="sw")
@@ -880,22 +906,34 @@ def main():
             sources_list_box.insert("END", item + " (Z39.50)")
         for item in config_file["web_scraping_sources"]:
             sources_list_box.insert("END", item + " (Web)")
-    sources_list_box.grid(row=0, column=0, padx=(80, 10), pady=10)
+    sources_list_box.grid(row=0, column=0, padx=(60, 10), pady=10)
     ui_map['sources_list_box'] = sources_list_box
 
+    save_order_button = customtkinter.CTkButton(tabview.tab("Sources"), width=30, text="Save Order", command=save_order)
+    save_order_button.grid(row=0, column=1, padx=10, sticky="e")
+    ui_map['move_up'] = save_order_button
+
+    CTkToolTip(save_order_button, border_width=1, message="Saves the current source order.\n"
+                                                          "This is also automatically done\n"
+                                                          "whenever a search is performed.")
+
     move_up_button = customtkinter.CTkButton(tabview.tab("Sources"), width=30, text="▲", command=move_source_up)
-    move_up_button.grid(row=0, column=1, padx=(0, 100), pady=(90, 0), sticky="nw")
+    move_up_button.grid(row=0, column=1, padx=(0, 100), pady=(95, 0), sticky="nw")
     ui_map['move_up'] = move_up_button
 
     CTkToolTip(move_up_button, border_width=1, message="Move source up")
 
     move_down_button = customtkinter.CTkButton(tabview.tab("Sources"), width=30, text="▼", command=move_source_down)
-    move_down_button.grid(row=0, column=1, padx=(0, 100), pady=(130, 0), sticky="nw")
+    move_down_button.grid(row=0, column=1, padx=(0, 100), pady=(135, 0), sticky="nw")
     ui_map['move_down'] = move_down_button
 
     CTkToolTip(move_down_button, border_width=1, message="Move source down")
 
-    retrieve_isbn_switch = customtkinter.CTkSwitch(tabview.tab("Settings"), text="Retrieve ISBN",
+    settings_frame = customtkinter.CTkScrollableFrame(tabview.tab("Settings"))
+    settings_frame.grid(row=0, column=0, padx=10, sticky="nsew")
+    settings_frame.grid_columnconfigure(0, weight=1)
+
+    retrieve_isbn_switch = customtkinter.CTkSwitch(settings_frame, text="Retrieve ISBN",
                                                    command=change_isbn_retrieval)
     retrieve_isbn_switch.grid(row=0, column=0, padx=10, pady=5)
     ui_map['retrieve_isbn_switch'] = retrieve_isbn_switch
@@ -904,16 +942,16 @@ def main():
                                                              "retrieval\nwhen the "
                                                              "input file is OCNs")
 
-    retrieve_oclc_switch = customtkinter.CTkSwitch(tabview.tab("Settings"), text="Retrieve OCLC",
+    retrieve_oclc_switch = customtkinter.CTkSwitch(settings_frame, text="Retrieve OCN",
                                                    command=change_oclc_retrieval)
     retrieve_oclc_switch.grid(row=1, column=0, padx=10, pady=5)
     ui_map['retrieve_oclc_switch'] = retrieve_oclc_switch
 
-    CTkToolTip(retrieve_oclc_switch, border_width=1, message="Disable/Enable OCLC "
+    CTkToolTip(retrieve_oclc_switch, border_width=1, message="Disable/Enable OCN "
                                                              "retrieval\nwhen the "
                                                              "input file is ISBNs")
 
-    retrieve_lccn_switch = customtkinter.CTkSwitch(tabview.tab("Settings"), text="Retrieve LCCN",
+    retrieve_lccn_switch = customtkinter.CTkSwitch(settings_frame, text="Retrieve LCCN",
                                                    command=change_lccn_retrieval)
     retrieve_lccn_switch.grid(row=2, column=0, padx=10, pady=5)
     ui_map['retrieve_lccn_switch'] = retrieve_lccn_switch
@@ -923,29 +961,40 @@ def main():
                                                              "input file is either\n"
                                                              "OCNs or ISBNs")
 
-    timeout_button = customtkinter.CTkButton(tabview.tab("Settings"), text="Change Timeout Value", width=50,
+    timeout_button = customtkinter.CTkButton(settings_frame, text="Change Timeout Value", width=50,
                                              command=change_timeout_value)
     timeout_button.grid(row=3, column=0, padx=10, pady=(10, 5))
     ui_map['timeout_button'] = timeout_button
 
-    CTkToolTip(timeout_button, border_width=1, message="Timeout value (in seconds) and is \n"
+    CTkToolTip(timeout_button, border_width=1, message="Timeout value (in seconds) and is\n"
                                                        "on a per value basis per each\n"
                                                        "selected source.")
 
-    google_key_button = customtkinter.CTkButton(tabview.tab("Settings"), text="Change Google API Key", width=50,
+    google_key_button = customtkinter.CTkButton(settings_frame, text="Change Google API Key", width=50,
                                                 command=change_google_key)
     google_key_button.grid(row=4, column=0, padx=10, pady=5)
     ui_map['google_key_button'] = google_key_button
 
-    z3950_button = customtkinter.CTkButton(tabview.tab("Settings"), text="Change Z39.50 Settings", width=50,
+    yaz_client_button = customtkinter.CTkButton(settings_frame, text="Change YAZ Client Path", width=50,
+                                                command=change_yaz_client_path)
+    yaz_client_button.grid(row=5, column=0, padx=10, pady=5)
+    ui_map['yaz_client_button'] = yaz_client_button
+
+    yaz_client_path = config_file["yaz_client_path"]
+    yaz_client_tooltip = CTkToolTip(yaz_client_button, border_width=1, message=f"Change the path of the YAZ Client.\n "
+                                                                               f"Currently the yaz client path is set"
+                                                                               f" to:\n {yaz_client_path}")
+    ui_map['yaz_client_tooltip'] = yaz_client_tooltip
+
+    z3950_button = customtkinter.CTkButton(settings_frame, text="Change Z39.50 Settings", width=50,
                                            command=open_z3950_config)
-    z3950_button.grid(row=5, column=0, padx=10, pady=5)
+    z3950_button.grid(row=6, column=0, padx=10, pady=5)
     ui_map['z3950_button'] = z3950_button
 
-    web_scraping_button = customtkinter.CTkButton(tabview.tab("Settings"), text="Change Web Scraping Settings",
+    web_scraping_button = customtkinter.CTkButton(settings_frame, text="Change Web Scraping Settings",
                                                   width=50,
                                                   command=open_web_scraping_config)
-    web_scraping_button.grid(row=6, column=0, padx=10, pady=5)
+    web_scraping_button.grid(row=7, column=0, padx=10, pady=5)
     ui_map['web_scraping_button'] = web_scraping_button
 
     # Set default values
@@ -954,6 +1003,9 @@ def main():
     change_appearance_mode(config_file["appearance_mode"])
 
     timeout_button.configure(text="Change Timeout Value (" + str(config_file["search_timeout"]) + " secs)")
+
+    ui_map['isbn_radio_button'].select()
+    ui_map['input_type'] = "isbn"
 
     if not config_file["retrieve_isbn"]:
         retrieve_isbn_switch.deselect()

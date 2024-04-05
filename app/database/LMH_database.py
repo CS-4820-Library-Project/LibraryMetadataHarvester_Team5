@@ -1,5 +1,6 @@
 import sqlite3
 from sqlite3 import Error
+from app import logs
 
 
 class Database:
@@ -48,7 +49,7 @@ class Database:
             self.connection.commit()
 
         except sqlite3.Error as e:
-            print(f"Error: {e}")
+            logs.log_error(f"{e}")
 
         finally:
             self.close_connection()
@@ -117,7 +118,7 @@ class Database:
             self.connection.commit()
 
         except sqlite3.Error as e:
-            print(f"Error: {e}")
+            logs.log_error(f"{e}")
             self.connection.rollback()
 
         finally:
@@ -165,7 +166,7 @@ class Database:
                     return False
 
         except sqlite3.Error as e:
-            print(f"Error: {e}")
+            logs.log_error(f"{e}")
 
         finally:
             self.close_connection()
@@ -232,7 +233,7 @@ class Database:
                 return []
 
         except sqlite3.Error as e:
-            print(f"Error: {e}")
+            logs.log_error(f"{e}")
             return []
 
         finally:
@@ -251,7 +252,7 @@ class Database:
             self.connection.commit()
 
         except sqlite3.Error as e:
-            print(f"Error: {e}")
+            logs.log_error(f"{e}")
 
         finally:
             self.close_connection()
@@ -271,7 +272,7 @@ class Database:
                 print(row)
 
         except sqlite3.Error as e:
-            print(f"Error viewing data: {e}")
+            logs.log_error(f"Error viewing data: {e}")
 
         finally:
             self.close_connection()

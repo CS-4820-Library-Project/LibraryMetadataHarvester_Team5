@@ -1,7 +1,7 @@
 import os
 import requests
 import re
-from app import config
+from app import config, logs
 from app import callNumberValidation
 from datetime import timedelta
 from ratelimit import limits, sleep_and_retry
@@ -38,10 +38,10 @@ def download_webpage(url, file_path):
                 file.write(response.text)
             return True
         else:
-            print(f"Failed to download {url}. Status code: {response.status_code}")
+            logs.log_error(f"Failed to download {url}. Status code: {response.status_code}")
             return False
     except Exception as e:
-        print(f"Exception occurred during download: {e}")
+        logs.log_error(f"Exception occurred during website download: {e}")
         return False
 
 
@@ -144,7 +144,7 @@ def parse_data(entry, number, retrieval_settings, library):
                         # Delete the document webpage file after extraction
                         os.remove(doc_file_path)
                     else:
-                        print(f"Failed to download page for document ID: {doc_id}")
+                        logs.log_error(f"Failed to download page for document ID: {doc_id}")
             else:
-                print(f"Failed to download main page for ISBN: {number}")
+                logs.log_error(f"Failed to download main page for value: {number}")
     return entry

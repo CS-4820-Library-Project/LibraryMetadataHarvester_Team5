@@ -1,6 +1,6 @@
 import json
 import requests
-from app import config
+from app import config, logs
 from app import callNumberValidation
 from datetime import timedelta
 from ratelimit import limits, sleep_and_retry
@@ -15,7 +15,7 @@ def parse_loc_data(entry, number, retrieval_settings, is_oclc):
         oclc = ''
         for result in results:
             if not isinstance(result, dict):
-                print("Error: Entry formatted incorrectly, skipping this one")
+                logs.log_warning("LOC Entry formatted incorrectly, skipping this one")
                 continue
             if result.get('item').get('call_number'):
                 call_number = (result.get('item').get('call_number'))
@@ -68,5 +68,5 @@ def retrieve_data_from_loc(number, looking_for_status):
 
         return parsed_data
     except requests.exceptions.RequestException as e:
-        print(f"Error retrieving data from LOC: {e}")
+        logs.log_error(f"Error retrieving data from LOC: {e}")
         return None

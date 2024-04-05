@@ -1,6 +1,6 @@
 import json
 import requests
-from app import config
+from app import config, logs
 from app import callNumberValidation
 
 
@@ -22,7 +22,7 @@ def parse_harvard_data(entry, number, retrieval_settings):
             oclc = ''
             for identifier in identifiers:
                 if not isinstance(identifier, dict):
-                    print("Error: Harvard entry formatted incorrectly, skipping this one")
+                    logs.log_warning("Harvard entry formatted incorrectly, skipping this one")
                     continue
                 if identifier.get('type') == 'oclc':
                     oclc = identifier.get('content', '')
@@ -46,7 +46,7 @@ def parse_harvard_data(entry, number, retrieval_settings):
             lccn = ''
             for classification in classifications:
                 if not isinstance(classification, dict):
-                    print("Error: Harvard entry formatted incorrectly, skipping this one")
+                    logs.log_warning("Harvard entry formatted incorrectly, skipping this one")
                     continue
                 if classification.get('authority') == 'lcc':
                     lccn = classification.get('content', '')
@@ -86,5 +86,5 @@ def retrieve_data_from_harvard(isbn, looking_for_status):
 
         return parsed_data
     except requests.exceptions.RequestException as e:
-        print(f"Error retrieving data from Harvard: {e}")
+        logs.log_error(f"Error retrieving data from Harvard: {e}")
         return None

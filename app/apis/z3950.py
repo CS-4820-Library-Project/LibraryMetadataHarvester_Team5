@@ -1,5 +1,5 @@
 import subprocess
-from app import config
+from app import config, logs
 from app import callNumberValidation
 
 
@@ -18,7 +18,7 @@ def parse_text_marc(text_marc):
             if tag == "079":
                 marc_data['oclc'] = line.split('$z')[0].split('$a')[1].lower().replace("(ocolc)", "").strip()
         except IndexError as e:
-            print("Error: Z39.50 entry was formatted incorrectly, skipping this one")
+            logs.log_warning("Z39.50 entry was formatted incorrectly, skipping this one")
 
     return marc_data
 
@@ -32,12 +32,12 @@ def run_yaz_client(isbn, target_string):
     show 1
     quit
     """
-    process = subprocess.run(['C:\\Program Files\\YAZ\\bin\\yaz-client'], input=commands, text=True, encoding='utf-8',
+    process = subprocess.run([config_file["yaz_client_path"]], input=commands, text=True, encoding='utf-8',
                              stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=config_file["search_timeout"])
 
     # # Exit if there was an error
     if process.stderr and "Innovative Interfaces Inc. Z39.50 SERVER version 1.1" not in process.stderr:
-        print("Error: ", process.stderr)
+        logs.log_error("Error from Z39.50: " + process.stderr)
         return None
 
     # Process the MARC record text
