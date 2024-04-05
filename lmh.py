@@ -689,9 +689,7 @@ def search():
         write_to_output(metadata, ui_map['output_file_field'].get())
 
     global ui_has_been_disabled
-    global stop_button_has_been_enabled
     ui_has_been_disabled = False
-    stop_button_has_been_enabled = False
 
     progress_window.destroy()
 
