@@ -121,7 +121,7 @@ Constructs url for the Google Books API using an ISBN or OCLC(OCN) number and re
 
 ## harvardAPI.py
 
-More information on the Harvard API can be found [here]()
+More information on the Harvard API can be found [here](https://library.harvard.edu/services-tools/harvard-library-apis-datasets)
 
 ### Functions
 
@@ -198,6 +198,21 @@ Obtains the OCLC and LCC for a given ISBN and updates the entry variable.
 Simple regular expression to make sure given LCCN is not a Control Number.
 
 ## config.py
+
+### config.json format:
+{<br>
+            "google_api_key": "YOUR_GOOGLE_API_KEY", # String for API key<br>
+            "search_timeout": 10,  # Default search timeout in seconds<br>
+            "retrieve_isbn": True,<br>
+            "retrieve_oclc": True,<br>
+            "retrieve_lccn": True,<br>
+            "appearance_mode": "Dark",<br>
+            "yaz_client_path": "", # path to yaz client<br>
+            "z3950_sources": 
+            {"name (Yale)": "url (z3950.library.yale.edu:7090/voyager)"},<br>
+            "web_scraping_sources": {name, base_url, query_url},<br>
+            "ordered_sources": [] # order of sources to be searched<br>
+        }
 
 Configuration settings for the Library Metadata Harvester are stored in a JSON file named "config.json".
 
