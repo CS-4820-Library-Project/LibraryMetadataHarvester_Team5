@@ -34,8 +34,12 @@ def run_yaz_client(isbn, target_string):
     """
 
     try:
+        info = subprocess.STARTUPINFO()
+        info.dwFlags = subprocess.STARTF_USESHOWWINDOW
+        info.wShowWindow = 0
         process = subprocess.run([config_file["yaz_client_path"]], input=commands, text=True, encoding='utf-8',
-                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=config_file["search_timeout"])
+                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=config_file["search_timeout"],
+                                 startupinfo=info)
 
         # Exit if there was an error
         if process.stderr and "Innovative Interfaces Inc. Z39.50 SERVER version 1.1" not in process.stderr:
