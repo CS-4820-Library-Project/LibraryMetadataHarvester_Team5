@@ -469,11 +469,13 @@ def check_thread_status(thread):
             ui_map['oclc_radio_button'].configure(state="disabled")
             ui_map['choose_file_button'].configure(state="disabled")
             ui_map['output_file_field'].configure(state="disabled")
+            ui_map['save_order_button'].configure(state="disabled")
             ui_map['retrieve_isbn_switch'].configure(state="disabled")
             ui_map['retrieve_oclc_switch'].configure(state="disabled")
             ui_map['retrieve_lccn_switch'].configure(state="disabled")
             ui_map['timeout_button'].configure(state="disabled")
             ui_map['google_key_button'].configure(state="disabled")
+            ui_map['yaz_client_button'].configure(state="disabled")
             ui_map['z3950_button'].configure(state="disabled")
             ui_map['web_scraping_button'].configure(state="disabled")
             ui_map['start_button'].configure(state="disabled")
@@ -486,11 +488,13 @@ def check_thread_status(thread):
         ui_map['oclc_radio_button'].configure(state="normal")
         ui_map['choose_file_button'].configure(state="normal")
         ui_map['output_file_field'].configure(state="normal")
+        ui_map['save_order_button'].configure(state="normal")
         ui_map['retrieve_isbn_switch'].configure(state="normal")
         ui_map['retrieve_oclc_switch'].configure(state="normal")
         ui_map['retrieve_lccn_switch'].configure(state="normal")
         ui_map['timeout_button'].configure(state="normal")
         ui_map['google_key_button'].configure(state="normal")
+        ui_map['yaz_client_button'].configure(state="normal")
         ui_map['z3950_button'].configure(state="normal")
         ui_map['web_scraping_button'].configure(state="normal")
         ui_map['start_button'].configure(state="normal")
@@ -911,7 +915,7 @@ def main():
 
     save_order_button = customtkinter.CTkButton(tabview.tab("Sources"), width=30, text="Save Order", command=save_order)
     save_order_button.grid(row=0, column=1, padx=10, sticky="e")
-    ui_map['move_up'] = save_order_button
+    ui_map['save_order_button'] = save_order_button
 
     CTkToolTip(save_order_button, border_width=1, message="Saves the current source order.\n"
                                                           "This is also automatically done\n"

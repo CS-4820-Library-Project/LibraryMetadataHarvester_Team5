@@ -32,20 +32,23 @@ def run_yaz_client(isbn, target_string):
     show 1
     quit
     """
-    process = subprocess.run([config_file["yaz_client_path"]], input=commands, text=True, encoding='utf-8',
-                             stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=config_file["search_timeout"])
 
-    # # Exit if there was an error
-    if process.stderr and "Innovative Interfaces Inc. Z39.50 SERVER version 1.1" not in process.stderr:
-        logs.log_error("Error from Z39.50: " + process.stderr)
-        return None
+    try:
+        process = subprocess.run([config_file["yaz_client_path"]], input=commands, text=True, encoding='utf-8',
+                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=config_file["search_timeout"])
 
-    # Process the MARC record text
-    if process.stdout:
-        marc_data = parse_text_marc(process.stdout)
-        return marc_data
+        # Exit if there was an error
+        if process.stderr and "Innovative Interfaces Inc. Z39.50 SERVER version 1.1" not in process.stderr:
+            logs.log_error("Error from Z39.50: " + process.stderr)
+            return {'lccn': '', 'oclc': ''}
 
-    return None
+        # Process the MARC record text
+        if process.stdout:
+            marc_data = parse_text_marc(process.stdout)
+            return marc_data
+    except Exception as e:
+        logs.log_error("Error from Z39.50: " + str(e))
+        return {'lccn': '', 'oclc': ''}
 
 
 def parse_data(entry, number, retrieval_settings, library):
