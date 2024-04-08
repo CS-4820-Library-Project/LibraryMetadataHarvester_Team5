@@ -34,10 +34,9 @@ def run_yaz_client(isbn, target_string):
     """
 
     try:
-        SW_HIDE = 0
         info = subprocess.STARTUPINFO()
         info.dwFlags = subprocess.STARTF_USESHOWWINDOW
-        info.wShowWindow = SW_HIDE
+        info.wShowWindow = 0
         process = subprocess.run([config_file["yaz_client_path"]], input=commands, text=True, encoding='utf-8',
                                  stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=config_file["search_timeout"],
                                  startupinfo=info)
