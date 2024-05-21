@@ -1,0 +1,16 @@
+Example of a Blacklight webscraping source
+Three parameters: label, base URL, and Query URL
+
+Columbia University:
+Label: Columbia (or whatever you want to use)
+Base URL: https://clio.columbia.edu/catalog
+Query URL: https://clio.columbia.edu/catalog?q=
+
+If you want to manually add these to the config.json file, they look like this:
+
+    "web_scraping_sources": {
+        "Columbia": [
+            "https://clio.columbia.edu/catalog?q=",
+            "https://clio.columbia.edu/catalog"
+        ]
+    },
